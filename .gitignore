@@ -17,6 +17,11 @@ dist/
 .DS_Store
 Thumbs.db
 
+# Server uploads (bestanden worden lokaal opgeslagen, niet in git)
+server/uploads/*
+!server/uploads/.gitkeep
+server/bestanden.json
+
 # Logs
 *.log
 npm-debug.log*

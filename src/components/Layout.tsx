@@ -1,6 +1,6 @@
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
-import { LogOut, ClipboardList, Users, Settings, BookOpen } from 'lucide-react'
+import { LogOut, ClipboardList, Users, Settings, BookOpen, FolderOpen } from 'lucide-react'
 
 interface Props {
   children: React.ReactNode
@@ -26,16 +26,19 @@ export function Layout({ children }: Props) {
     if (!currentUser) return []
     if (currentUser.rol === 'reservist') return [
       { to: '/dashboard', icon: ClipboardList, label: 'Mijn taken' },
+      { to: '/documenten', icon: FolderOpen, label: 'Documenten' },
       { to: '/contacten', icon: BookOpen, label: 'Contacten' },
     ]
     if (currentUser.rol === 'commandant') return [
       { to: '/commandant', icon: Users, label: 'Voortgang' },
+      { to: '/documenten', icon: FolderOpen, label: 'Documenten' },
       { to: '/contacten', icon: BookOpen, label: 'Contacten' },
     ]
     // beheerder
     return [
       { to: '/beheerder', icon: Settings, label: 'Beheer' },
       { to: '/commandant', icon: Users, label: 'Voortgang' },
+      { to: '/documenten', icon: FolderOpen, label: 'Documenten' },
       { to: '/contacten', icon: BookOpen, label: 'Contacten' },
     ]
   }

@@ -9,6 +9,7 @@ import { ReservistDashboard } from './pages/ReservistDashboard'
 import { CommanderDashboard } from './pages/CommanderDashboard'
 import { AdminDashboard } from './pages/AdminDashboard'
 import { ContactsPage } from './pages/ContactsPage'
+import { DocumentenPage } from './pages/DocumentenPage'
 
 function RootRedirect() {
   const { currentUser } = useAuth()
@@ -60,6 +61,18 @@ function AppRoutes() {
           <ProtectedRoute roles={['beheerder']}>
             <Layout>
               <AdminDashboard />
+            </Layout>
+          </ProtectedRoute>
+        }
+      />
+
+      {/* Documenten — all authenticated users */}
+      <Route
+        path="/documenten"
+        element={
+          <ProtectedRoute>
+            <Layout>
+              <DocumentenPage />
             </Layout>
           </ProtectedRoute>
         }

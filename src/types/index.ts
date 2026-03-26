@@ -28,6 +28,19 @@ export interface Taak {
   vereistTaakId?: string
 }
 
+export interface Bestand {
+  id: string
+  naam: string
+  beschrijving: string
+  categorie: string
+  bestandsnaam: string
+  bestandstype: string
+  grootte: number
+  geuploadOp: string
+  geuploadDoor: string
+  url: string
+}
+
 export interface Contact {
   id: string
   naam: string

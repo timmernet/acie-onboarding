@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react'
-import type { User, UserRole, Taak, Contact } from '../types'
+import type { User, UserRole, Taak, Contact, Bestand } from '../types'
 import { DEMO_USERS, TAKEN as INIT_TAKEN, CONTACTEN as INIT_CONTACTEN } from '../data/dummyData'
 
 interface AuthContextType {
@@ -21,6 +21,9 @@ interface AuthContextType {
   addContact: (contact: Omit<Contact, 'id'>) => void
   updateContact: (contact: Contact) => void
   deleteContact: (id: string) => void
+  bestanden: Bestand[]
+  uploadBestand: (file: File, naam: string, beschrijving: string, categorie: string) => Promise<void>
+  deleteBestand: (id: string) => Promise<void>
 }
 
 const AuthContext = createContext<AuthContextType | null>(null)
@@ -57,6 +60,7 @@ function loadContacten(): Contact[] {
   }
 }
 
+
 function saveUsers(users: User[]) {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(users))
 }
@@ -65,6 +69,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [users, setUsers] = useState<User[]>(loadUsers)
   const [taken, setTaken] = useState<Taak[]>(loadTaken)
   const [contacten, setContacten] = useState<Contact[]>(loadContacten)
+  const [bestanden, setBestanden] = useState<Bestand[]>([])
   const [currentUser, setCurrentUser] = useState<User | null>(() => {
     const sessionId = sessionStorage.getItem(SESSION_KEY)
     if (!sessionId) return null
@@ -87,6 +92,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     localStorage.setItem(CONTACTEN_KEY, JSON.stringify(contacten))
   }, [contacten])
+
+  useEffect(() => {
+    fetch('/api/bestanden')
+      .then(r => r.json())
+      .then(setBestanden)
+      .catch(() => {})
+  }, [])
 
   const login = (email: string, pin: string): boolean => {
     const user = users.find(
@@ -235,6 +247,26 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setContacten(prev => prev.filter(c => c.id !== id))
   }
 
+  const uploadBestand = async (file: File, naam: string, beschrijving: string, categorie: string): Promise<void> => {
+    const formData = new FormData()
+    formData.append('file', file)
+    formData.append('naam', naam.trim() || file.name)
+    formData.append('beschrijving', beschrijving)
+    formData.append('categorie', categorie)
+    formData.append('geuploadDoor', currentUser?.naam ?? 'Onbekend')
+
+    const res = await fetch('/api/bestanden', { method: 'POST', body: formData })
+    if (!res.ok) throw new Error('Upload mislukt')
+    const nieuw: Bestand = await res.json()
+    setBestanden(prev => [...prev, nieuw])
+  }
+
+  const deleteBestand = async (id: string): Promise<void> => {
+    const res = await fetch(`/api/bestanden/${id}`, { method: 'DELETE' })
+    if (!res.ok) throw new Error('Verwijderen mislukt')
+    setBestanden(prev => prev.filter(b => b.id !== id))
+  }
+
   return (
     <AuthContext.Provider
       value={{
@@ -242,6 +274,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         login, register, logout, updateUserRole, toggleTask, setOpmerking,
         moveTaakOmhoog, moveTaakOmlaag, addTaak, updateTaak, deleteTaak,
         addContact, updateContact, deleteContact,
+        bestanden, uploadBestand, deleteBestand,
       }}
     >
       {children}
