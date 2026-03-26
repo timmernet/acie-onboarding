@@ -10,7 +10,7 @@ const CATEGORIE_KLEUREN: Record<string, string> = {
 }
 
 export function ReservistDashboard() {
-  const { currentUser, toggleTask, taken } = useAuth()
+  const { currentUser, toggleTask, setOpmerking, taken } = useAuth()
   const [openTask, setOpenTask] = useState<string | null>(null)
 
   if (!currentUser) return null
@@ -116,6 +116,16 @@ export function ReservistDashboard() {
                 {isOpen && (
                   <div className="px-4 pb-4 pt-0 border-t border-gray-100">
                     <p className="text-sm text-gray-600 mt-3 mb-3">{taak.beschrijving}</p>
+                    <div className="mb-3">
+                      <label className="block text-xs font-medium text-army-600 mb-1.5">Opmerking</label>
+                      <textarea
+                        rows={2}
+                        placeholder="Voeg een persoonlijke opmerking toe…"
+                        defaultValue={status?.opmerking ?? ''}
+                        onBlur={e => setOpmerking(taak.id, e.target.value)}
+                        className="w-full px-3 py-2 rounded-lg border border-army-200 bg-army-50 focus:outline-none focus:ring-2 focus:ring-army-500 focus:border-transparent text-sm resize-none"
+                      />
+                    </div>
                     <button
                       onClick={() => toggleTask(taak.id)}
                       className={`text-sm font-semibold px-4 py-2 rounded-lg transition-colors ${

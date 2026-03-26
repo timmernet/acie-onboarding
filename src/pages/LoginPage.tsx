@@ -36,8 +36,8 @@ export function LoginPage() {
     <div className="min-h-screen bg-army-800 flex flex-col">
       {/* Hero header */}
       <div className="flex flex-col items-center justify-center pt-16 pb-10 px-4 text-center">
-        <div className="w-20 h-20 rounded-2xl bg-gold-500 flex items-center justify-center font-black text-army-900 text-2xl mb-5 shadow-lg">
-          XIII
+        <div className="w-20 h-20 rounded-2xl overflow-hidden mb-5 shadow-lg">
+          <img src="/Embleem_13_Lichte_Brigade.png" alt="13 Lichte Brigade" className="w-full h-full object-cover" />
         </div>
         <h1 className="text-white text-3xl font-extrabold tracking-tight">A-Compagnie</h1>
         <p className="text-army-300 text-sm mt-1">30e Infanteriebataljon · 13 Lichte Brigade</p>

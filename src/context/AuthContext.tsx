@@ -12,6 +12,7 @@ interface AuthContextType {
   logout: () => void
   updateUserRole: (userId: string, rol: UserRole) => void
   toggleTask: (taskId: string) => void
+  setOpmerking: (taskId: string, opmerking: string) => void
   addTaak: (taak: Omit<Taak, 'id'>) => void
   updateTaak: (taak: Taak) => void
   deleteTaak: (id: string) => void
@@ -152,6 +153,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     )
   }
 
+  const setOpmerking = (taskId: string, opmerking: string) => {
+    if (!currentUser) return
+    setUsers(prev =>
+      prev.map(u => {
+        if (u.id !== currentUser.id) return u
+        return {
+          ...u,
+          taken: u.taken.map(t =>
+            t.taskId === taskId ? { ...t, opmerking: opmerking || undefined } : t
+          ),
+        }
+      })
+    )
+  }
+
   const addTaak = (taak: Omit<Taak, 'id'>) => {
     const id = `t_${Date.now()}`
     const newTaak: Taak = { ...taak, id }
@@ -195,7 +211,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     <AuthContext.Provider
       value={{
         currentUser, users, taken, contacten,
-        login, register, logout, updateUserRole, toggleTask,
+        login, register, logout, updateUserRole, toggleTask, setOpmerking,
         addTaak, updateTaak, deleteTaak,
         addContact, updateContact, deleteContact,
       }}

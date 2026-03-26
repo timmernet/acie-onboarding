@@ -55,8 +55,8 @@ export function Layout({ children }: Props) {
         <div className="max-w-5xl mx-auto px-4 h-16 flex items-center justify-between">
           {/* Logo / title */}
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-lg bg-gold-500 flex items-center justify-center font-black text-army-900 text-sm leading-none select-none">
-              XIII
+            <div className="w-8 h-8 rounded-lg overflow-hidden flex-shrink-0">
+              <img src="/Embleem_13_Lichte_Brigade.png" alt="13 Lichte Brigade" className="w-full h-full object-cover" />
             </div>
             <div className="leading-tight">
               <div className="font-bold text-sm">A-Compagnie</div>
