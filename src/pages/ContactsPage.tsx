@@ -1,11 +1,12 @@
 import { useState } from 'react'
-import { CONTACTEN } from '../data/dummyData'
+import { useAuth } from '../context/AuthContext'
 import { Phone, Mail, Search } from 'lucide-react'
 
 export function ContactsPage() {
+  const { contacten } = useAuth()
   const [zoek, setZoek] = useState('')
 
-  const gefilterd = CONTACTEN.filter(c => {
+  const gefilterd = contacten.filter(c => {
     const q = zoek.toLowerCase()
     return (
       c.naam.toLowerCase().includes(q) ||

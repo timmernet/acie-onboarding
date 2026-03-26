@@ -1,6 +1,5 @@
 import { useState } from 'react'
 import { useAuth } from '../context/AuthContext'
-import { TAKEN } from '../data/dummyData'
 import { CheckCircle2, Circle, ChevronDown, ChevronUp, User } from 'lucide-react'
 
 const CATEGORIE_KLEUREN: Record<string, string> = {
@@ -11,13 +10,13 @@ const CATEGORIE_KLEUREN: Record<string, string> = {
 }
 
 export function ReservistDashboard() {
-  const { currentUser, toggleTask } = useAuth()
+  const { currentUser, toggleTask, taken } = useAuth()
   const [openTask, setOpenTask] = useState<string | null>(null)
 
   if (!currentUser) return null
 
   const voltooid = currentUser.taken.filter(t => t.voltooid).length
-  const totaal = TAKEN.length
+  const totaal = taken.length
   const pct = Math.round((voltooid / totaal) * 100)
 
   const getStatus = (taskId: string) =>
@@ -61,7 +60,7 @@ export function ReservistDashboard() {
       <div>
         <h2 className="text-army-900 font-bold text-lg mb-3">Onboarding taken</h2>
         <div className="space-y-2">
-          {TAKEN.map(taak => {
+          {taken.map(taak => {
             const status = getStatus(taak.id)
             const voltooidItem = status?.voltooid ?? false
             const isOpen = openTask === taak.id

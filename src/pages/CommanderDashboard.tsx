@@ -1,10 +1,9 @@
 import { useState } from 'react'
 import { useAuth } from '../context/AuthContext'
-import { TAKEN } from '../data/dummyData'
 import { ChevronDown, ChevronUp, CheckCircle2, Circle, Users } from 'lucide-react'
 
 export function CommanderDashboard() {
-  const { users } = useAuth()
+  const { users, taken } = useAuth()
   const [openUser, setOpenUser] = useState<string | null>(null)
   const [filterPelotoon, setFilterPelotoon] = useState('Alle')
 
@@ -18,7 +17,7 @@ export function CommanderDashboard() {
 
   const pct = (user: typeof reservisten[0]) => {
     const v = user.taken.filter(t => t.voltooid).length
-    return Math.round((v / TAKEN.length) * 100)
+    return Math.round((v / taken.length) * 100)
   }
 
   const gemiddeld = gefilterd.length
@@ -106,7 +105,7 @@ export function CommanderDashboard() {
                           style={{ width: `${p}%` }}
                         />
                       </div>
-                      <span className="text-xs text-army-500 flex-shrink-0">{voltooid}/{TAKEN.length}</span>
+                      <span className="text-xs text-army-500 flex-shrink-0">{voltooid}/{taken.length}</span>
                     </div>
                   </div>
 
@@ -123,7 +122,7 @@ export function CommanderDashboard() {
                   <div className="border-t border-army-100 px-4 py-3">
                     <div className="text-xs font-semibold text-army-500 uppercase tracking-wide mb-2">Taken</div>
                     <div className="space-y-1.5">
-                      {TAKEN.map(taak => {
+                      {taken.map(taak => {
                         const t = user.taken.find(ut => ut.taskId === taak.id)
                         return (
                           <div key={taak.id} className="flex items-center gap-2.5">
