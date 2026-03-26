@@ -93,7 +93,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       u => u.email.toLowerCase() === email.toLowerCase() && u.pin === pin
     )
     if (!user) return false
-    setCurrentUser(user)
+    const now = new Date().toISOString()
+    setUsers(prev => prev.map(u => u.id === user.id ? { ...u, laatstIngelogd: now } : u))
+    setCurrentUser({ ...user, laatstIngelogd: now })
     sessionStorage.setItem(SESSION_KEY, user.id)
     return true
   }

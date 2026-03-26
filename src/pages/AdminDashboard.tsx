@@ -194,7 +194,14 @@ export function AdminDashboard() {
                   <div className="flex-1 min-w-0">
                     <div className="font-semibold text-army-900 text-sm">{user.naam}</div>
                     <div className="text-army-400 text-xs truncate">{user.email}</div>
-                    <div className="text-army-400 text-xs">{user.pelotoon} · Lid sinds {new Date(user.aangemeldOp).toLocaleDateString('nl-NL')}</div>
+                    <div className="text-army-400 text-xs">
+                      {user.pelotoon} · Lid sinds {new Date(user.aangemeldOp).toLocaleDateString('nl-NL')}
+                    </div>
+                    <div className="text-army-400 text-xs">
+                      {user.laatstIngelogd
+                        ? <>Laatst ingelogd: {new Date(user.laatstIngelogd).toLocaleString('nl-NL', { dateStyle: 'short', timeStyle: 'short' })}</>
+                        : 'Nog niet ingelogd'}
+                    </div>
                   </div>
                   <div className="flex flex-col items-end gap-2 flex-shrink-0">
                     <span className={`text-xs px-2.5 py-1 rounded-full font-medium ${ROL_KLEUREN[user.rol]}`}>

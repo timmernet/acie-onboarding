@@ -96,7 +96,14 @@ export function CommanderDashboard() {
 
                   <div className="flex-1 min-w-0">
                     <div className="font-semibold text-army-900 text-sm">{user.naam}</div>
-                    <div className="text-army-500 text-xs">{user.pelotoon}</div>
+                    <div className="text-army-500 text-xs">
+                      {user.pelotoon}
+                      {user.laatstIngelogd && (
+                        <span className="ml-2 text-army-400">
+                          · ingelogd {new Date(user.laatstIngelogd).toLocaleString('nl-NL', { dateStyle: 'short', timeStyle: 'short' })}
+                        </span>
+                      )}
+                    </div>
                     {/* Progress bar */}
                     <div className="mt-2 flex items-center gap-2">
                       <div className="flex-1 bg-army-100 rounded-full h-1.5">

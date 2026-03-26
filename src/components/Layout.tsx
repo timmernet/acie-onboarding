@@ -55,9 +55,7 @@ export function Layout({ children }: Props) {
         <div className="max-w-5xl mx-auto px-4 h-16 flex items-center justify-between">
           {/* Logo / title */}
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-lg overflow-hidden flex-shrink-0">
-              <img src="/Embleem_13_Lichte_Brigade.png" alt="13 Lichte Brigade" className="w-full h-full object-cover" />
-            </div>
+            <img src="/Embleem_13_Lichte_Brigade.png" alt="13 Lichte Brigade" className="h-9 w-auto flex-shrink-0" />
             <div className="leading-tight">
               <div className="font-bold text-sm">A-Compagnie</div>
               <div className="text-army-300 text-xs">30IBB · 13 Lichte Brigade</div>
@@ -88,6 +86,31 @@ export function Layout({ children }: Props) {
         </div>
       </header>
 
+      {/* Desktop sub-nav — sticky, in document flow so main is pushed down naturally */}
+      {currentUser && navItems().length > 1 && (
+        <div className="hidden md:block sticky top-16 bg-army-700 z-30 shadow">
+          <div className="max-w-5xl mx-auto px-4 flex gap-1 h-10 items-center">
+            {navItems().map(item => {
+              const active = location.pathname === item.to
+              return (
+                <Link
+                  key={item.to}
+                  to={item.to}
+                  className={`flex items-center gap-2 px-4 h-full text-sm font-medium transition-colors border-b-2 ${
+                    active
+                      ? 'border-gold-400 text-gold-300'
+                      : 'border-transparent text-army-200 hover:text-white'
+                  }`}
+                >
+                  <item.icon size={15} />
+                  {item.label}
+                </Link>
+              )
+            })}
+          </div>
+        </div>
+      )}
+
       {/* Main content */}
       <main className="flex-1 max-w-5xl w-full mx-auto px-4 py-6 pb-24 md:pb-8">
         {children}
@@ -116,36 +139,6 @@ export function Layout({ children }: Props) {
             })}
           </div>
         </nav>
-      )}
-
-      {/* Desktop sidebar nav — shown as top sub-nav */}
-      {currentUser && navItems().length > 1 && (
-        <div className="hidden md:block fixed top-16 left-0 right-0 bg-army-700 z-30 shadow">
-          <div className="max-w-5xl mx-auto px-4 flex gap-1 h-10 items-center">
-            {navItems().map(item => {
-              const active = location.pathname === item.to
-              return (
-                <Link
-                  key={item.to}
-                  to={item.to}
-                  className={`flex items-center gap-2 px-4 h-full text-sm font-medium transition-colors border-b-2 ${
-                    active
-                      ? 'border-gold-400 text-gold-300'
-                      : 'border-transparent text-army-200 hover:text-white'
-                  }`}
-                >
-                  <item.icon size={15} />
-                  {item.label}
-                </Link>
-              )
-            })}
-          </div>
-        </div>
-      )}
-
-      {/* Spacer for sub-nav on desktop */}
-      {currentUser && navItems().length > 1 && (
-        <style>{`@media (min-width: 768px) { main { padding-top: 3.5rem; } }`}</style>
       )}
     </div>
   )
