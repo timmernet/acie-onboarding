@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useAuth } from '../context/AuthContext'
 import type { Taak, Contact, UserRole } from '../types'
-import { Shield, UserCheck, Users, Search, Plus, Pencil, Trash2, X, ClipboardList, BookOpen } from 'lucide-react'
+import { Shield, UserCheck, Users, Search, Plus, Pencil, Trash2, X, ClipboardList, BookOpen, ChevronUp, ChevronDown } from 'lucide-react'
 
 const ROL_LABELS: Record<UserRole, string> = {
   reservist: 'Reservist',
@@ -19,13 +19,13 @@ const INPUT = 'w-full px-3 py-2 rounded-lg border border-army-200 bg-white focus
 
 type Tab = 'Gebruikers' | 'Taken' | 'Contacten'
 
-const leegeTaak = (): Omit<Taak, 'id'> => ({ titel: '', beschrijving: '', categorie: '', contactId: '' })
+const leegeTaak = (): Omit<Taak, 'id'> => ({ titel: '', beschrijving: '', categorie: '', contactId: '', vereistTaakId: undefined })
 const leegeContact = (): Omit<Contact, 'id'> => ({ naam: '', rang: '', functie: '', telefoon: '', email: '', tags: [] })
 
 export function AdminDashboard() {
   const {
     users, currentUser, updateUserRole,
-    taken, addTaak, updateTaak, deleteTaak,
+    taken, moveTaakOmhoog, moveTaakOmlaag, addTaak, updateTaak, deleteTaak,
     contacten, addContact, updateContact, deleteContact,
   } = useAuth()
 
@@ -39,6 +39,7 @@ export function AdminDashboard() {
   const [nieuweTaak, setNieuweTaak] = useState(leegeTaak())
   const [bewerkTaakId, setBewerkTaakId] = useState<string | null>(null)
   const [bewerkTaakData, setBewerkTaakData] = useState<Taak | null>(null)
+  const [verwijderTaakId, setVerwijderTaakId] = useState<string | null>(null)
 
   // Contacten
   const [contactFormOpen, setContactFormOpen] = useState(false)
@@ -47,6 +48,7 @@ export function AdminDashboard() {
   const [bewerkContactId, setBewerkContactId] = useState<string | null>(null)
   const [bewerkContactData, setBewerkContactData] = useState<Contact | null>(null)
   const [bewerkContactTagsStr, setBewerkContactTagsStr] = useState('')
+  const [verwijderContactId, setVerwijderContactId] = useState<string | null>(null)
 
   // --- Gebruikers ---
   const gefilterd = users
@@ -248,42 +250,18 @@ export function AdminDashboard() {
                   <X size={16} />
                 </button>
               </div>
-              <input
-                type="text"
-                placeholder="Titel *"
-                value={nieuweTaak.titel}
-                onChange={e => setNieuweTaak(p => ({ ...p, titel: e.target.value }))}
-                className={INPUT}
-              />
-              <textarea
-                placeholder="Beschrijving"
-                rows={3}
-                value={nieuweTaak.beschrijving}
-                onChange={e => setNieuweTaak(p => ({ ...p, beschrijving: e.target.value }))}
-                className={INPUT}
-              />
-              <input
-                type="text"
-                placeholder="Categorie (bijv. Administratie, IT, Medisch)"
-                value={nieuweTaak.categorie}
-                onChange={e => setNieuweTaak(p => ({ ...p, categorie: e.target.value }))}
-                className={INPUT}
-              />
-              <select
-                value={nieuweTaak.contactId}
-                onChange={e => setNieuweTaak(p => ({ ...p, contactId: e.target.value }))}
-                className={INPUT}
-              >
+              <input type="text" placeholder="Titel *" value={nieuweTaak.titel} onChange={e => setNieuweTaak(p => ({ ...p, titel: e.target.value }))} className={INPUT} />
+              <textarea placeholder="Beschrijving" rows={3} value={nieuweTaak.beschrijving} onChange={e => setNieuweTaak(p => ({ ...p, beschrijving: e.target.value }))} className={INPUT} />
+              <input type="text" placeholder="Categorie (bijv. Administratie, IT, Medisch)" value={nieuweTaak.categorie} onChange={e => setNieuweTaak(p => ({ ...p, categorie: e.target.value }))} className={INPUT} />
+              <select value={nieuweTaak.contactId} onChange={e => setNieuweTaak(p => ({ ...p, contactId: e.target.value }))} className={INPUT}>
                 <option value="">— Geen contactpersoon —</option>
-                {contacten.map(c => (
-                  <option key={c.id} value={c.id}>{c.rang} {c.naam} — {c.functie}</option>
-                ))}
+                {contacten.map(c => <option key={c.id} value={c.id}>{c.rang} {c.naam} — {c.functie}</option>)}
               </select>
-              <button
-                onClick={handleTaakOpslaan}
-                disabled={!nieuweTaak.titel.trim()}
-                className="w-full py-2 rounded-lg bg-army-700 text-white text-sm font-semibold hover:bg-army-800 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-              >
+              <select value={nieuweTaak.vereistTaakId ?? ''} onChange={e => setNieuweTaak(p => ({ ...p, vereistTaakId: e.target.value || undefined }))} className={INPUT}>
+                <option value="">— Geen vereiste taak —</option>
+                {taken.map(t => <option key={t.id} value={t.id}>{t.titel}</option>)}
+              </select>
+              <button onClick={handleTaakOpslaan} disabled={!nieuweTaak.titel.trim()} className="w-full py-2 rounded-lg bg-army-700 text-white text-sm font-semibold hover:bg-army-800 disabled:opacity-40 disabled:cursor-not-allowed transition-colors">
                 Taak opslaan
               </button>
             </div>
@@ -291,83 +269,83 @@ export function AdminDashboard() {
 
           {/* Takenlijst */}
           <div className="space-y-2">
-            {taken.map(taak => (
-              <div key={taak.id} className="bg-white rounded-xl border border-army-100 shadow-sm overflow-hidden">
-                {bewerkTaakId === taak.id && bewerkTaakData ? (
-                  // Edit form
-                  <div className="p-4 space-y-3">
-                    <div className="flex items-center justify-between mb-1">
-                      <span className="font-semibold text-army-800 text-sm">Taak bewerken</span>
-                      <button onClick={() => { setBewerkTaakId(null); setBewerkTaakData(null) }} className="text-army-400 hover:text-army-700">
-                        <X size={16} />
+            {taken.map((taak, index) => {
+              const vereisteTaak = taak.vereistTaakId ? taken.find(t => t.id === taak.vereistTaakId) : null
+              return (
+                <div key={taak.id} className="bg-white rounded-xl border border-army-100 shadow-sm overflow-hidden">
+                  {bewerkTaakId === taak.id && bewerkTaakData ? (
+                    // Edit form
+                    <div className="p-4 space-y-3">
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="font-semibold text-army-800 text-sm">Taak bewerken</span>
+                        <button onClick={() => { setBewerkTaakId(null); setBewerkTaakData(null) }} className="text-army-400 hover:text-army-700">
+                          <X size={16} />
+                        </button>
+                      </div>
+                      <input type="text" placeholder="Titel *" value={bewerkTaakData.titel} onChange={e => setBewerkTaakData(p => p && ({ ...p, titel: e.target.value }))} className={INPUT} />
+                      <textarea placeholder="Beschrijving" rows={3} value={bewerkTaakData.beschrijving} onChange={e => setBewerkTaakData(p => p && ({ ...p, beschrijving: e.target.value }))} className={INPUT} />
+                      <input type="text" placeholder="Categorie" value={bewerkTaakData.categorie} onChange={e => setBewerkTaakData(p => p && ({ ...p, categorie: e.target.value }))} className={INPUT} />
+                      <select value={bewerkTaakData.contactId} onChange={e => setBewerkTaakData(p => p && ({ ...p, contactId: e.target.value }))} className={INPUT}>
+                        <option value="">— Geen contactpersoon —</option>
+                        {contacten.map(c => <option key={c.id} value={c.id}>{c.rang} {c.naam} — {c.functie}</option>)}
+                      </select>
+                      <select value={bewerkTaakData.vereistTaakId ?? ''} onChange={e => setBewerkTaakData(p => p && ({ ...p, vereistTaakId: e.target.value || undefined }))} className={INPUT}>
+                        <option value="">— Geen vereiste taak —</option>
+                        {taken.filter(t => t.id !== bewerkTaakData.id).map(t => <option key={t.id} value={t.id}>{t.titel}</option>)}
+                      </select>
+                      <button onClick={handleTaakBewerken} disabled={!bewerkTaakData.titel.trim()} className="w-full py-2 rounded-lg bg-army-700 text-white text-sm font-semibold hover:bg-army-800 disabled:opacity-40 disabled:cursor-not-allowed transition-colors">
+                        Wijzigingen opslaan
                       </button>
                     </div>
-                    <input
-                      type="text"
-                      placeholder="Titel *"
-                      value={bewerkTaakData.titel}
-                      onChange={e => setBewerkTaakData(p => p && ({ ...p, titel: e.target.value }))}
-                      className={INPUT}
-                    />
-                    <textarea
-                      placeholder="Beschrijving"
-                      rows={3}
-                      value={bewerkTaakData.beschrijving}
-                      onChange={e => setBewerkTaakData(p => p && ({ ...p, beschrijving: e.target.value }))}
-                      className={INPUT}
-                    />
-                    <input
-                      type="text"
-                      placeholder="Categorie"
-                      value={bewerkTaakData.categorie}
-                      onChange={e => setBewerkTaakData(p => p && ({ ...p, categorie: e.target.value }))}
-                      className={INPUT}
-                    />
-                    <select
-                      value={bewerkTaakData.contactId}
-                      onChange={e => setBewerkTaakData(p => p && ({ ...p, contactId: e.target.value }))}
-                      className={INPUT}
-                    >
-                      <option value="">— Geen contactpersoon —</option>
-                      {contacten.map(c => (
-                        <option key={c.id} value={c.id}>{c.rang} {c.naam} — {c.functie}</option>
-                      ))}
-                    </select>
-                    <button
-                      onClick={handleTaakBewerken}
-                      disabled={!bewerkTaakData.titel.trim()}
-                      className="w-full py-2 rounded-lg bg-army-700 text-white text-sm font-semibold hover:bg-army-800 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-                    >
-                      Wijzigingen opslaan
-                    </button>
-                  </div>
-                ) : (
-                  // View row
-                  <div className="flex items-center gap-3 p-4">
-                    <div className="flex-1 min-w-0">
-                      <div className="font-semibold text-army-900 text-sm">{taak.titel}</div>
-                      <div className="text-army-400 text-xs mt-0.5">{taak.categorie}</div>
+                  ) : (
+                    // View row
+                    <div className="flex items-center gap-2 p-3">
+                      {/* Volgorde knoppen */}
+                      <div className="flex flex-col gap-0.5 flex-shrink-0">
+                        <button onClick={() => moveTaakOmhoog(taak.id)} disabled={index === 0} className="p-0.5 rounded text-army-300 hover:text-army-600 disabled:opacity-20 disabled:cursor-not-allowed transition-colors">
+                          <ChevronUp size={14} />
+                        </button>
+                        <button onClick={() => moveTaakOmlaag(taak.id)} disabled={index === taken.length - 1} className="p-0.5 rounded text-army-300 hover:text-army-600 disabled:opacity-20 disabled:cursor-not-allowed transition-colors">
+                          <ChevronDown size={14} />
+                        </button>
+                      </div>
+                      <span className="text-xs font-bold text-army-300 w-5 text-center flex-shrink-0">{index + 1}</span>
+                      <div className="flex-1 min-w-0">
+                        <div className="font-semibold text-army-900 text-sm">{taak.titel}</div>
+                        <div className="text-army-400 text-xs mt-0.5 flex items-center gap-2 flex-wrap">
+                          <span>{taak.categorie}</span>
+                          {vereisteTaak && (
+                            <span className="text-amber-600">↳ na: {vereisteTaak.titel}</span>
+                          )}
+                        </div>
+                      </div>
+                      <div className="flex gap-1 flex-shrink-0">
+                        {verwijderTaakId === taak.id ? (
+                          <>
+                            <span className="text-xs text-red-600 font-medium self-center mr-1">Verwijderen?</span>
+                            <button onClick={() => { deleteTaak(taak.id); setVerwijderTaakId(null) }} className="px-2 py-1 rounded-lg bg-red-600 text-white text-xs font-semibold hover:bg-red-700 transition-colors">
+                              Ja
+                            </button>
+                            <button onClick={() => setVerwijderTaakId(null)} className="px-2 py-1 rounded-lg bg-gray-100 text-gray-600 text-xs font-semibold hover:bg-gray-200 transition-colors">
+                              Nee
+                            </button>
+                          </>
+                        ) : (
+                          <>
+                            <button onClick={() => startBewerkTaak(taak)} className="p-1.5 rounded-lg text-army-500 hover:bg-army-50 hover:text-army-800 transition-colors" title="Bewerken">
+                              <Pencil size={15} />
+                            </button>
+                            <button onClick={() => setVerwijderTaakId(taak.id)} className="p-1.5 rounded-lg text-red-400 hover:bg-red-50 hover:text-red-700 transition-colors" title="Verwijderen">
+                              <Trash2 size={15} />
+                            </button>
+                          </>
+                        )}
+                      </div>
                     </div>
-                    <div className="flex gap-2 flex-shrink-0">
-                      <button
-                        onClick={() => startBewerkTaak(taak)}
-                        className="p-1.5 rounded-lg text-army-500 hover:bg-army-50 hover:text-army-800 transition-colors"
-                        title="Bewerken"
-                      >
-                        <Pencil size={15} />
-                      </button>
-                      <button
-                        onClick={() => deleteTaak(taak.id)}
-                        className="p-1.5 rounded-lg text-red-400 hover:bg-red-50 hover:text-red-700 transition-colors"
-                        title="Verwijderen"
-                      >
-                        <Trash2 size={15} />
-                      </button>
-                    </div>
-                  </div>
-                )}
-              </div>
-            ))}
+                  )}
+                </div>
+              )
+            })}
             {taken.length === 0 && (
               <div className="text-center py-12 text-army-400 text-sm bg-white rounded-xl border border-army-100">
                 Nog geen taken aangemaakt.
@@ -457,21 +435,27 @@ export function AdminDashboard() {
                       <div className="font-semibold text-army-900 text-sm">{contact.rang} {contact.naam}</div>
                       <div className="text-army-400 text-xs truncate">{contact.functie}</div>
                     </div>
-                    <div className="flex gap-2 flex-shrink-0">
-                      <button
-                        onClick={() => startBewerkContact(contact)}
-                        className="p-1.5 rounded-lg text-army-500 hover:bg-army-50 hover:text-army-800 transition-colors"
-                        title="Bewerken"
-                      >
-                        <Pencil size={15} />
-                      </button>
-                      <button
-                        onClick={() => deleteContact(contact.id)}
-                        className="p-1.5 rounded-lg text-red-400 hover:bg-red-50 hover:text-red-700 transition-colors"
-                        title="Verwijderen"
-                      >
-                        <Trash2 size={15} />
-                      </button>
+                    <div className="flex gap-1 flex-shrink-0">
+                      {verwijderContactId === contact.id ? (
+                        <>
+                          <span className="text-xs text-red-600 font-medium self-center mr-1">Verwijderen?</span>
+                          <button onClick={() => { deleteContact(contact.id); setVerwijderContactId(null) }} className="px-2 py-1 rounded-lg bg-red-600 text-white text-xs font-semibold hover:bg-red-700 transition-colors">
+                            Ja
+                          </button>
+                          <button onClick={() => setVerwijderContactId(null)} className="px-2 py-1 rounded-lg bg-gray-100 text-gray-600 text-xs font-semibold hover:bg-gray-200 transition-colors">
+                            Nee
+                          </button>
+                        </>
+                      ) : (
+                        <>
+                          <button onClick={() => startBewerkContact(contact)} className="p-1.5 rounded-lg text-army-500 hover:bg-army-50 hover:text-army-800 transition-colors" title="Bewerken">
+                            <Pencil size={15} />
+                          </button>
+                          <button onClick={() => setVerwijderContactId(contact.id)} className="p-1.5 rounded-lg text-red-400 hover:bg-red-50 hover:text-red-700 transition-colors" title="Verwijderen">
+                            <Trash2 size={15} />
+                          </button>
+                        </>
+                      )}
                     </div>
                   </div>
                 )}

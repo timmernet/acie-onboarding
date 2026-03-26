@@ -24,6 +24,7 @@ export interface Taak {
   beschrijving: string
   categorie: string
   contactId: string
+  vereistTaakId?: string
 }
 
 export interface Contact {

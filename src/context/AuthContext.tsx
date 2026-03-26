@@ -13,6 +13,8 @@ interface AuthContextType {
   updateUserRole: (userId: string, rol: UserRole) => void
   toggleTask: (taskId: string) => void
   setOpmerking: (taskId: string, opmerking: string) => void
+  moveTaakOmhoog: (id: string) => void
+  moveTaakOmlaag: (id: string) => void
   addTaak: (taak: Omit<Taak, 'id'>) => void
   updateTaak: (taak: Taak) => void
   deleteTaak: (id: string) => void
@@ -168,6 +170,26 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     )
   }
 
+  const moveTaakOmhoog = (id: string) => {
+    setTaken(prev => {
+      const idx = prev.findIndex(t => t.id === id)
+      if (idx <= 0) return prev
+      const updated = [...prev]
+      ;[updated[idx - 1], updated[idx]] = [updated[idx], updated[idx - 1]]
+      return updated
+    })
+  }
+
+  const moveTaakOmlaag = (id: string) => {
+    setTaken(prev => {
+      const idx = prev.findIndex(t => t.id === id)
+      if (idx < 0 || idx >= prev.length - 1) return prev
+      const updated = [...prev]
+      ;[updated[idx], updated[idx + 1]] = [updated[idx + 1], updated[idx]]
+      return updated
+    })
+  }
+
   const addTaak = (taak: Omit<Taak, 'id'>) => {
     const id = `t_${Date.now()}`
     const newTaak: Taak = { ...taak, id }
@@ -185,7 +207,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }
 
   const deleteTaak = (id: string) => {
-    setTaken(prev => prev.filter(t => t.id !== id))
+    setTaken(prev =>
+      prev
+        .filter(t => t.id !== id)
+        .map(t => t.vereistTaakId === id ? { ...t, vereistTaakId: undefined } : t)
+    )
     setUsers(prev =>
       prev.map(u => ({
         ...u,
@@ -212,7 +238,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       value={{
         currentUser, users, taken, contacten,
         login, register, logout, updateUserRole, toggleTask, setOpmerking,
-        addTaak, updateTaak, deleteTaak,
+        moveTaakOmhoog, moveTaakOmlaag, addTaak, updateTaak, deleteTaak,
         addContact, updateContact, deleteContact,
       }}
     >
