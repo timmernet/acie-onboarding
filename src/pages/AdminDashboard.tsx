@@ -1,19 +1,8 @@
 import { useState } from 'react'
 import { useAuth } from '../context/AuthContext'
-import type { Taak, Contact, UserRole } from '../types'
-import { Shield, UserCheck, UserX, Users, Search, Plus, Pencil, Trash2, X, ClipboardList, BookOpen, ChevronUp, ChevronDown, Clock } from 'lucide-react'
-
-const ROL_LABELS: Record<UserRole, string> = {
-  reservist: 'Reservist',
-  commandant: 'Commandant',
-  beheerder: 'Beheerder',
-}
-
-const ROL_KLEUREN: Record<UserRole, string> = {
-  reservist: 'bg-army-100 text-army-700',
-  commandant: 'bg-blue-100 text-blue-700',
-  beheerder: 'bg-gold-300 text-amber-800',
-}
+import type { Taak, Contact } from '../types'
+import { Shield, Users, Plus, Pencil, Trash2, X, ClipboardList, BookOpen, ChevronUp, ChevronDown } from 'lucide-react'
+import { UserBeheerPanel } from '../components/UserBeheerPanel'
 
 const INPUT = 'w-full px-3 py-2 rounded-lg border border-army-200 bg-white focus:outline-none focus:ring-2 focus:ring-army-500 focus:border-transparent text-sm'
 
@@ -24,15 +13,11 @@ const leegeContact = (): Omit<Contact, 'id'> => ({ naam: '', rang: '', functie: 
 
 export function AdminDashboard() {
   const {
-    users, currentUser, updateUserRole, activeerUser, afwijsUser,
     taken, moveTaakOmhoog, moveTaakOmlaag, addTaak, updateTaak, deleteTaak,
     contacten, addContact, updateContact, deleteContact,
   } = useAuth()
 
   const [actieveTab, setActieveTab] = useState<Tab>('Gebruikers')
-
-  // Gebruikers
-  const [zoek, setZoek] = useState('')
 
   // Taken
   const [taakFormOpen, setTaakFormOpen] = useState(false)
@@ -49,23 +34,6 @@ export function AdminDashboard() {
   const [bewerkContactData, setBewerkContactData] = useState<Contact | null>(null)
   const [bewerkContactTagsStr, setBewerkContactTagsStr] = useState('')
   const [verwijderContactId, setVerwijderContactId] = useState<string | null>(null)
-
-  // --- Gebruikers ---
-  const wachtend = users.filter(u => !u.actief)
-  const gefilterd = users
-    .filter(u => u.id !== currentUser?.id && u.actief)
-    .filter(u => {
-      const q = zoek.toLowerCase()
-      return (
-        u.naam.toLowerCase().includes(q) ||
-        u.email.toLowerCase().includes(q) ||
-        u.pelotoon.toLowerCase().includes(q)
-      )
-    })
-
-  const totaalReservisten = users.filter(u => u.rol === 'reservist' && u.actief).length
-  const totaalCommandanten = users.filter(u => u.rol === 'commandant' && u.actief).length
-  const totaalBeheerders = users.filter(u => u.rol === 'beheerder' && u.actief).length
 
   // --- Taken ---
   const handleTaakOpslaan = () => {
@@ -151,133 +119,7 @@ export function AdminDashboard() {
       </div>
 
       {/* === GEBRUIKERS TAB === */}
-      {actieveTab === 'Gebruikers' && (
-        <div className="space-y-4">
-          {/* Wachtende activaties */}
-          {wachtend.length > 0 && (
-            <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 space-y-3">
-              <div className="flex items-center gap-2">
-                <Clock size={16} className="text-amber-600" />
-                <h3 className="font-semibold text-amber-800 text-sm">
-                  Wachtende activaties ({wachtend.length})
-                </h3>
-              </div>
-              <div className="space-y-2">
-                {wachtend.map(user => (
-                  <div key={user.id} className="bg-white rounded-lg border border-amber-100 p-3 flex items-center gap-3">
-                    <div className="w-9 h-9 rounded-full bg-amber-100 text-amber-700 flex items-center justify-center font-bold text-xs flex-shrink-0">
-                      {user.naam.split(' ').filter(Boolean).slice(0, 2).map(n => n[0]).join('').toUpperCase()}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="font-semibold text-army-900 text-sm">{user.naam}</div>
-                      <div className="text-army-400 text-xs truncate">{user.email} · {user.pelotoon}</div>
-                      <div className="text-army-400 text-xs">Aangemeld op {new Date(user.aangemeldOp).toLocaleDateString('nl-NL')}</div>
-                    </div>
-                    <div className="flex gap-1.5 flex-shrink-0">
-                      <button
-                        onClick={() => activeerUser(user.id)}
-                        className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-green-600 hover:bg-green-700 text-white text-xs font-medium transition-colors"
-                      >
-                        <UserCheck size={13} /> Activeer
-                      </button>
-                      <button
-                        onClick={() => afwijsUser(user.id)}
-                        className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-red-100 hover:bg-red-200 text-red-700 text-xs font-medium transition-colors"
-                      >
-                        <UserX size={13} /> Afwijzen
-                      </button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Stats */}
-          <div className="grid grid-cols-3 gap-3">
-            <div className="bg-white rounded-xl border border-army-100 shadow-sm p-4 text-center">
-              <div className="flex justify-center mb-2"><Users size={20} className="text-army-500" /></div>
-              <div className="text-xl font-extrabold text-army-800">{totaalReservisten}</div>
-              <div className="text-army-400 text-xs mt-0.5">Reservisten</div>
-            </div>
-            <div className="bg-white rounded-xl border border-army-100 shadow-sm p-4 text-center">
-              <div className="flex justify-center mb-2"><UserCheck size={20} className="text-blue-500" /></div>
-              <div className="text-xl font-extrabold text-blue-700">{totaalCommandanten}</div>
-              <div className="text-army-400 text-xs mt-0.5">Commandanten</div>
-            </div>
-            <div className="bg-white rounded-xl border border-army-100 shadow-sm p-4 text-center">
-              <div className="flex justify-center mb-2"><Shield size={20} className="text-amber-500" /></div>
-              <div className="text-xl font-extrabold text-amber-700">{totaalBeheerders}</div>
-              <div className="text-army-400 text-xs mt-0.5">Beheerders</div>
-            </div>
-          </div>
-
-          {/* Search */}
-          <div className="relative">
-            <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-army-400" />
-            <input
-              type="text"
-              placeholder="Zoek op naam, e-mail of peloton…"
-              value={zoek}
-              onChange={e => setZoek(e.target.value)}
-              className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-army-200 bg-white focus:outline-none focus:ring-2 focus:ring-army-500 focus:border-transparent text-sm shadow-sm"
-            />
-          </div>
-
-          {/* User list */}
-          <div className="space-y-2">
-            {gefilterd.map(user => (
-              <div key={user.id} className="bg-white rounded-xl border border-army-100 shadow-sm p-4">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-army-100 text-army-700 flex items-center justify-center font-bold text-sm flex-shrink-0">
-                    {user.naam.split(' ').filter(Boolean).slice(0, 2).map(n => n[0]).join('').toUpperCase()}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="font-semibold text-army-900 text-sm">{user.naam}</div>
-                    <div className="text-army-400 text-xs truncate">{user.email}</div>
-                    <div className="text-army-400 text-xs">
-                      {user.pelotoon} · Lid sinds {new Date(user.aangemeldOp).toLocaleDateString('nl-NL')}
-                    </div>
-                    <div className="text-army-400 text-xs">
-                      {user.laatstIngelogd
-                        ? <>Laatst ingelogd: {new Date(user.laatstIngelogd).toLocaleString('nl-NL', { dateStyle: 'short', timeStyle: 'short' })}</>
-                        : 'Nog niet ingelogd'}
-                    </div>
-                  </div>
-                  <div className="flex flex-col items-end gap-2 flex-shrink-0">
-                    <span className={`text-xs px-2.5 py-1 rounded-full font-medium ${ROL_KLEUREN[user.rol]}`}>
-                      {ROL_LABELS[user.rol]}
-                    </span>
-                  </div>
-                </div>
-                <div className="mt-3 pt-3 border-t border-army-50">
-                  <div className="text-xs text-army-500 mb-2 font-medium">Rol aanpassen:</div>
-                  <div className="flex gap-2 flex-wrap">
-                    {(['reservist', 'commandant', 'beheerder'] as UserRole[]).map(rol => (
-                      <button
-                        key={rol}
-                        onClick={() => updateUserRole(user.id, rol)}
-                        className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition-all ${
-                          user.rol === rol
-                            ? 'bg-army-700 text-white border-army-700'
-                            : 'bg-white text-army-600 border-army-200 hover:border-army-500 hover:text-army-800'
-                        }`}
-                      >
-                        {ROL_LABELS[rol]}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            ))}
-            {gefilterd.length === 0 && (
-              <div className="text-center py-12 text-army-400 text-sm bg-white rounded-xl border border-army-100">
-                Geen gebruikers gevonden.
-              </div>
-            )}
-          </div>
-        </div>
-      )}
+      {actieveTab === 'Gebruikers' && <UserBeheerPanel />}
 
       {/* === TAKEN TAB === */}
       {actieveTab === 'Taken' && (

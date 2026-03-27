@@ -1,13 +1,16 @@
 import { useState } from 'react'
 import { useAuth } from '../context/AuthContext'
-import { ChevronDown, ChevronUp, CheckCircle2, Circle, Users, UserCheck, UserX, Clock } from 'lucide-react'
+import { ChevronDown, ChevronUp, CheckCircle2, Circle, Users } from 'lucide-react'
+import { UserBeheerPanel } from '../components/UserBeheerPanel'
+
+type Tab = 'voortgang' | 'gebruikers'
 
 export function CommanderDashboard() {
-  const { users, taken, activeerUser, afwijsUser } = useAuth()
+  const { users, taken } = useAuth()
+  const [tab, setTab] = useState<Tab>('voortgang')
   const [openUser, setOpenUser] = useState<string | null>(null)
   const [filterPelotoon, setFilterPelotoon] = useState('Alle')
 
-  const wachtend = users.filter(u => !u.actief)
   const reservisten = users.filter(u => u.rol === 'reservist' && u.actief)
 
   const pelotonen = ['Alle', ...Array.from(new Set(reservisten.map(u => u.pelotoon))).sort()]
@@ -30,44 +33,27 @@ export function CommanderDashboard() {
   return (
     <div className="space-y-6">
 
-      {/* Wachtende activaties */}
-      {wachtend.length > 0 && (
-        <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 space-y-3">
-          <div className="flex items-center gap-2">
-            <Clock size={16} className="text-amber-600" />
-            <h3 className="font-semibold text-amber-800 text-sm">
-              Wachtende activaties ({wachtend.length})
-            </h3>
-          </div>
-          <div className="space-y-2">
-            {wachtend.map(user => (
-              <div key={user.id} className="bg-white rounded-lg border border-amber-100 p-3 flex items-center gap-3">
-                <div className="w-9 h-9 rounded-full bg-amber-100 text-amber-700 flex items-center justify-center font-bold text-xs flex-shrink-0">
-                  {user.naam.split(' ').filter(Boolean).slice(0, 2).map(n => n[0]).join('').toUpperCase()}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="font-semibold text-army-900 text-sm">{user.naam}</div>
-                  <div className="text-army-400 text-xs truncate">{user.email} · {user.pelotoon}</div>
-                </div>
-                <div className="flex gap-1.5 flex-shrink-0">
-                  <button
-                    onClick={() => activeerUser(user.id)}
-                    className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-green-600 hover:bg-green-700 text-white text-xs font-medium transition-colors"
-                  >
-                    <UserCheck size={13} /> Activeer
-                  </button>
-                  <button
-                    onClick={() => afwijsUser(user.id)}
-                    className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-red-100 hover:bg-red-200 text-red-700 text-xs font-medium transition-colors"
-                  >
-                    <UserX size={13} /> Afwijzen
-                  </button>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
+      {/* Tabs */}
+      <div className="flex gap-1 bg-army-100 rounded-xl p-1">
+        <button
+          onClick={() => setTab('voortgang')}
+          className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg text-sm font-medium transition-colors ${tab === 'voortgang' ? 'bg-white text-army-800 shadow-sm' : 'text-army-500 hover:text-army-700'}`}
+        >
+          <CheckCircle2 size={15} /> Voortgang
+        </button>
+        <button
+          onClick={() => setTab('gebruikers')}
+          className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg text-sm font-medium transition-colors ${tab === 'gebruikers' ? 'bg-white text-army-800 shadow-sm' : 'text-army-500 hover:text-army-700'}`}
+        >
+          <Users size={15} /> Gebruikers
+        </button>
+      </div>
+
+      {/* Gebruikers tab */}
+      {tab === 'gebruikers' && <UserBeheerPanel />}
+
+      {/* Voortgang tab */}
+      {tab === 'voortgang' && <>
 
       {/* Stats */}
       <div className="grid grid-cols-3 gap-3">
@@ -198,6 +184,8 @@ export function CommanderDashboard() {
           })}
         </div>
       </div>
+
+      </>}
     </div>
   )
 }

@@ -9,7 +9,11 @@ interface AuthContextType {
   contacten: Contact[]
   login: (email: string, pin: string) => 'ok' | 'fout' | 'wacht'
   activeerUser: (userId: string) => void
+  deactiveerUser: (userId: string) => void
   afwijsUser: (userId: string) => void
+  addUserDirect: (data: Omit<User, 'id' | 'taken' | 'aangemeldOp' | 'laatstIngelogd'>) => { ok: boolean; error?: string }
+  updateUser: (data: Pick<User, 'id' | 'naam' | 'email' | 'pin' | 'pelotoon' | 'rol'>) => { ok: boolean; error?: string }
+  deleteUser: (userId: string) => void
   register: (naam: string, email: string, pin: string, pelotoon: string) => { ok: boolean; error?: string }
   logout: () => void
   updateUserRole: (userId: string, rol: UserRole) => void
@@ -122,7 +126,37 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setUsers(prev => prev.map(u => u.id === userId ? { ...u, actief: true } : u))
   }
 
+  const deactiveerUser = (userId: string) => {
+    setUsers(prev => prev.map(u => u.id === userId ? { ...u, actief: false } : u))
+  }
+
   const afwijsUser = (userId: string) => {
+    setUsers(prev => prev.filter(u => u.id !== userId))
+  }
+
+  const addUserDirect = (data: Omit<User, 'id' | 'taken' | 'aangemeldOp' | 'laatstIngelogd'>): { ok: boolean; error?: string } => {
+    if (users.find(u => u.email.toLowerCase() === data.email.toLowerCase())) {
+      return { ok: false, error: 'Dit e-mailadres is al in gebruik.' }
+    }
+    const currentTaken = loadTaken()
+    const newUser: User = {
+      ...data,
+      id: `u_${Date.now()}`,
+      aangemeldOp: new Date().toISOString().split('T')[0],
+      taken: currentTaken.map(t => ({ taskId: t.id, voltooid: false })),
+    }
+    setUsers(prev => [...prev, newUser])
+    return { ok: true }
+  }
+
+  const updateUser = (data: Pick<User, 'id' | 'naam' | 'email' | 'pin' | 'pelotoon' | 'rol'>): { ok: boolean; error?: string } => {
+    const conflict = users.find(u => u.id !== data.id && u.email.toLowerCase() === data.email.toLowerCase())
+    if (conflict) return { ok: false, error: 'Dit e-mailadres is al in gebruik.' }
+    setUsers(prev => prev.map(u => u.id === data.id ? { ...u, ...data } : u))
+    return { ok: true }
+  }
+
+  const deleteUser = (userId: string) => {
     setUsers(prev => prev.filter(u => u.id !== userId))
   }
 
@@ -284,7 +318,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     <AuthContext.Provider
       value={{
         currentUser, users, taken, contacten,
-        login, register, logout, updateUserRole, activeerUser, afwijsUser,
+        login, register, logout, updateUserRole,
+        activeerUser, deactiveerUser, afwijsUser, addUserDirect, updateUser, deleteUser,
         toggleTask, setOpmerking,
         moveTaakOmhoog, moveTaakOmlaag, addTaak, updateTaak, deleteTaak,
         addContact, updateContact, deleteContact,
