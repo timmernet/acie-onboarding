@@ -14,9 +14,7 @@ export function ForgotPinPage() {
   return (
     <div className="min-h-screen bg-army-800 flex flex-col">
       <div className="flex flex-col items-center justify-center pt-12 pb-8 px-4 text-center">
-        <div className="w-16 h-16 rounded-xl bg-gold-500 flex items-center justify-center font-black text-army-900 text-xl mb-4 shadow-lg">
-          XIII
-        </div>
+        <img src="/Embleem_13_Lichte_Brigade.png" alt="13 Lichte Brigade" className="h-20 w-auto mb-4 drop-shadow-lg" />
         <h1 className="text-white text-2xl font-extrabold">Pincode vergeten</h1>
         <p className="text-army-300 text-sm mt-1">30IBB · 13 Lichte Brigade</p>
       </div>
