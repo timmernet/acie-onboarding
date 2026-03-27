@@ -7,9 +7,17 @@ interface Props {
 }
 
 export function Layout({ children }: Props) {
-  const { currentUser, logout } = useAuth()
+  const { currentUser, logout, users } = useAuth()
   const navigate = useNavigate()
   const location = useLocation()
+
+  const nieuweTakenCount = currentUser?.rol === 'reservist'
+    ? currentUser.taken.filter(t => t.nieuw).length
+    : 0
+
+  const wachtendCount = currentUser?.rol === 'commandant' || currentUser?.rol === 'beheerder'
+    ? users.filter(u => !u.actief).length
+    : 0
 
   const handleLogout = () => {
     logout()
@@ -25,21 +33,21 @@ export function Layout({ children }: Props) {
   const navItems = () => {
     if (!currentUser) return []
     if (currentUser.rol === 'reservist') return [
-      { to: '/dashboard', icon: ClipboardList, label: 'Mijn taken' },
-      { to: '/documenten', icon: FolderOpen, label: 'Documenten' },
-      { to: '/contacten', icon: BookOpen, label: 'Contacten' },
+      { to: '/dashboard', icon: ClipboardList, label: 'Mijn taken', badge: nieuweTakenCount },
+      { to: '/documenten', icon: FolderOpen, label: 'Documenten', badge: 0 },
+      { to: '/contacten', icon: BookOpen, label: 'Contacten', badge: 0 },
     ]
     if (currentUser.rol === 'commandant') return [
-      { to: '/commandant', icon: Users, label: 'Voortgang' },
-      { to: '/documenten', icon: FolderOpen, label: 'Documenten' },
-      { to: '/contacten', icon: BookOpen, label: 'Contacten' },
+      { to: '/commandant', icon: Users, label: 'Voortgang', badge: wachtendCount },
+      { to: '/documenten', icon: FolderOpen, label: 'Documenten', badge: 0 },
+      { to: '/contacten', icon: BookOpen, label: 'Contacten', badge: 0 },
     ]
     // beheerder
     return [
-      { to: '/beheerder', icon: Settings, label: 'Beheer' },
-      { to: '/commandant', icon: Users, label: 'Voortgang' },
-      { to: '/documenten', icon: FolderOpen, label: 'Documenten' },
-      { to: '/contacten', icon: BookOpen, label: 'Contacten' },
+      { to: '/beheerder', icon: Settings, label: 'Beheer', badge: wachtendCount },
+      { to: '/commandant', icon: Users, label: 'Voortgang', badge: 0 },
+      { to: '/documenten', icon: FolderOpen, label: 'Documenten', badge: 0 },
+      { to: '/contacten', icon: BookOpen, label: 'Contacten', badge: 0 },
     ]
   }
 
@@ -107,6 +115,11 @@ export function Layout({ children }: Props) {
                 >
                   <item.icon size={15} />
                   {item.label}
+                  {item.badge > 0 && (
+                    <span className="ml-0.5 bg-red-500 text-white text-xs font-bold rounded-full min-w-[18px] h-[18px] flex items-center justify-center px-1">
+                      {item.badge}
+                    </span>
+                  )}
                 </Link>
               )
             })}
@@ -135,7 +148,14 @@ export function Layout({ children }: Props) {
                       : 'text-gray-500 hover:text-army-600'
                   }`}
                 >
-                  <item.icon size={20} />
+                  <div className="relative">
+                    <item.icon size={20} />
+                    {item.badge > 0 && (
+                      <span className="absolute -top-1.5 -right-2 bg-red-500 text-white text-xs font-bold rounded-full min-w-[16px] h-[16px] flex items-center justify-center px-0.5">
+                        {item.badge}
+                      </span>
+                    )}
+                  </div>
                   {item.label}
                 </Link>
               )

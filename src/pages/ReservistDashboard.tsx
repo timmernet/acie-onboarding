@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useAuth } from '../context/AuthContext'
-import { CheckCircle2, Circle, ChevronDown, ChevronUp, User, Lock } from 'lucide-react'
+import { CheckCircle2, Circle, ChevronDown, ChevronUp, User, Lock, Sparkles } from 'lucide-react'
 
 const CATEGORIE_KLEUREN: Record<string, string> = {
   Administratie: 'bg-blue-100 text-blue-700',
@@ -10,7 +10,7 @@ const CATEGORIE_KLEUREN: Record<string, string> = {
 }
 
 export function ReservistDashboard() {
-  const { currentUser, toggleTask, setOpmerking, taken } = useAuth()
+  const { currentUser, toggleTask, markeerTaakGezien, setOpmerking, taken } = useAuth()
   const [openTask, setOpenTask] = useState<string | null>(null)
 
   if (!currentUser) return null
@@ -24,6 +24,16 @@ export function ReservistDashboard() {
 
   const isGeblokkeerd = (vereistTaakId?: string) =>
     !!vereistTaakId && !getStatus(vereistTaakId)?.voltooid
+
+  const nieuweTaken = taken.filter(t => getStatus(t.id)?.nieuw)
+
+  const openTaak = (taakId: string) => {
+    setOpenTask(prev => {
+      if (prev === taakId) return null
+      markeerTaakGezien(taakId)
+      return taakId
+    })
+  }
 
   return (
     <div className="space-y-6">
@@ -59,6 +69,26 @@ export function ReservistDashboard() {
         )}
       </div>
 
+      {/* Nieuwe taken banner */}
+      {nieuweTaken.length > 0 && (
+        <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 space-y-2">
+          <div className="flex items-center gap-2">
+            <Sparkles size={15} className="text-blue-600" />
+            <span className="font-semibold text-blue-800 text-sm">
+              {nieuweTaken.length} nieuwe {nieuweTaken.length === 1 ? 'taak' : 'taken'} toegevoegd
+            </span>
+          </div>
+          <ul className="space-y-1">
+            {nieuweTaken.map(t => (
+              <li key={t.id} className="text-blue-700 text-sm flex items-center gap-2">
+                <span className="w-1.5 h-1.5 rounded-full bg-blue-400 flex-shrink-0" />
+                {t.titel}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
       {/* Task list */}
       <div>
         <h2 className="text-army-900 font-bold text-lg mb-3">Onboarding taken</h2>
@@ -69,6 +99,7 @@ export function ReservistDashboard() {
             const geblokkeerd = isGeblokkeerd(taak.vereistTaakId)
             const vereisteTaak = taak.vereistTaakId ? taken.find(t => t.id === taak.vereistTaakId) : null
             const isOpen = openTask === taak.id
+            const isNieuw = status?.nieuw ?? false
 
             return (
               <div
@@ -80,7 +111,7 @@ export function ReservistDashboard() {
                 {/* Task header */}
                 <div
                   className="flex items-center gap-3 p-4 cursor-pointer select-none"
-                  onClick={() => setOpenTask(isOpen ? null : taak.id)}
+                  onClick={() => openTaak(taak.id)}
                 >
                   {/* Volgnummer */}
                   <span className="text-xs font-bold text-army-400 w-5 text-center flex-shrink-0">
@@ -105,8 +136,13 @@ export function ReservistDashboard() {
                   </button>
 
                   <div className="flex-1 min-w-0">
-                    <div className={`font-semibold text-sm ${voltooidItem ? 'line-through text-gray-400' : geblokkeerd ? 'text-gray-400' : 'text-army-900'}`}>
-                      {taak.titel}
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className={`font-semibold text-sm ${voltooidItem ? 'line-through text-gray-400' : geblokkeerd ? 'text-gray-400' : 'text-army-900'}`}>
+                        {taak.titel}
+                      </span>
+                      {isNieuw && (
+                        <span className="text-xs px-1.5 py-0.5 rounded-full bg-blue-100 text-blue-700 font-semibold">Nieuw</span>
+                      )}
                     </div>
                     <div className="flex items-center gap-2 mt-1 flex-wrap">
                       <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${CATEGORIE_KLEUREN[taak.categorie] ?? 'bg-gray-100 text-gray-600'}`}>

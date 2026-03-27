@@ -5,6 +5,7 @@ export interface UserTask {
   voltooid: boolean
   voltooiDatum?: string
   opmerking?: string
+  nieuw?: boolean
 }
 
 export interface User {

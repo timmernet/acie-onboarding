@@ -19,6 +19,7 @@ interface AuthContextType {
   logout: () => void
   updateUserRole: (userId: string, rol: UserRole) => void
   toggleTask: (taskId: string) => void
+  markeerTaakGezien: (taskId: string) => void
   setOpmerking: (taskId: string, opmerking: string) => void
   moveTaakOmhoog: (id: string) => void
   moveTaakOmlaag: (id: string) => void
@@ -284,8 +285,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setUsers(prev =>
       prev.map(u => ({
         ...u,
-        taken: [...u.taken, { taskId: id, voltooid: false }],
+        taken: [...u.taken, { taskId: id, voltooid: false, nieuw: true }],
       }))
+    )
+  }
+
+  const markeerTaakGezien = (taskId: string) => {
+    if (!currentUser) return
+    setUsers(prev =>
+      prev.map(u => {
+        if (u.id !== currentUser.id) return u
+        return {
+          ...u,
+          taken: u.taken.map(t => t.taskId === taskId ? { ...t, nieuw: false } : t),
+        }
+      })
     )
   }
 
@@ -346,7 +360,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         currentUser, users, taken, contacten,
         login, register, logout, updateUserRole,
         activeerUser, deactiveerUser, afwijsUser, addUserDirect, updateUser, deleteUser, setPinByEmail,
-        toggleTask, setOpmerking,
+        toggleTask, markeerTaakGezien, setOpmerking,
         moveTaakOmhoog, moveTaakOmlaag, addTaak, updateTaak, deleteTaak,
         addContact, updateContact, deleteContact,
         bestanden, uploadBestand, deleteBestand,
