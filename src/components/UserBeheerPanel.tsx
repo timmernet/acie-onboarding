@@ -51,6 +51,11 @@ export function UserBeheerPanel() {
 
   const [verwijderId, setVerwijderId] = useState<string | null>(null)
 
+  const isBeheerder = currentUser?.rol === 'beheerder'
+  const beschikbareRollen: UserRole[] = isBeheerder
+    ? ['reservist', 'commandant', 'beheerder']
+    : ['reservist', 'commandant']
+
   const wachtend = users.filter(u => !u.actief)
   const actief = users.filter(u => u.actief && u.id !== currentUser?.id)
 
@@ -77,62 +82,6 @@ export function UserBeheerPanel() {
     setBewerkId(null)
     setBewerkError('')
   }
-
-  const GebruikerFormVelden = ({
-    form, onChange, error,
-  }: {
-    form: GebruikerForm
-    onChange: (f: GebruikerForm) => void
-    error: string
-  }) => (
-    <div className="space-y-3">
-      <div className="grid grid-cols-2 gap-3">
-        <div>
-          <label className="block text-xs font-medium text-army-600 mb-1">Naam *</label>
-          <input type="text" value={form.naam} onChange={e => onChange({ ...form, naam: e.target.value })} className={INPUT} />
-        </div>
-        <div>
-          <label className="block text-xs font-medium text-army-600 mb-1">E-mail *</label>
-          <input type="email" value={form.email} onChange={e => onChange({ ...form, email: e.target.value })} className={INPUT} />
-        </div>
-        <div>
-          <label className="block text-xs font-medium text-army-600 mb-1">PIN (4 cijfers) *</label>
-          <input
-            type="password"
-            inputMode="numeric"
-            maxLength={4}
-            value={form.pin}
-            onChange={e => onChange({ ...form, pin: e.target.value.replace(/\D/g, '').slice(0, 4) })}
-            className={INPUT}
-            placeholder="••••"
-          />
-        </div>
-        <div>
-          <label className="block text-xs font-medium text-army-600 mb-1">Peloton *</label>
-          <select value={form.pelotoon} onChange={e => onChange({ ...form, pelotoon: e.target.value })} className={INPUT}>
-            <option value="">Selecteer…</option>
-            {PELOTONEN.map(p => <option key={p} value={p}>{p}</option>)}
-          </select>
-        </div>
-        <div>
-          <label className="block text-xs font-medium text-army-600 mb-1">Rol</label>
-          <select value={form.rol} onChange={e => onChange({ ...form, rol: e.target.value as UserRole })} className={INPUT}>
-            {(Object.keys(ROL_LABELS) as UserRole[]).map(r => (
-              <option key={r} value={r}>{ROL_LABELS[r]}</option>
-            ))}
-          </select>
-        </div>
-        <div>
-          <label className="block text-xs font-medium text-army-600 mb-1">Status</label>
-          <select value={form.actief ? 'actief' : 'inactief'} onChange={e => onChange({ ...form, actief: e.target.value === 'actief' })} className={INPUT}>
-            <option value="actief">Actief</option>
-            <option value="inactief">Inactief</option>
-          </select>
-        </div>
-      </div>
-      {error && <p className="text-red-600 text-xs">{error}</p>}
-    </div>
-  )
 
   return (
     <div className="space-y-4">
@@ -179,7 +128,41 @@ export function UserBeheerPanel() {
             <span className="font-semibold text-army-800 text-sm">Nieuwe gebruiker</span>
             <button onClick={() => setNieuwOpen(false)} className="text-army-400 hover:text-army-700"><X size={16} /></button>
           </div>
-          <GebruikerFormVelden form={nieuwForm} onChange={setNieuwForm} error={nieuwError} />
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-xs font-medium text-army-600 mb-1">Naam *</label>
+              <input type="text" value={nieuwForm.naam} onChange={e => setNieuwForm(f => ({ ...f, naam: e.target.value }))} className={INPUT} />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-army-600 mb-1">E-mail *</label>
+              <input type="email" value={nieuwForm.email} onChange={e => setNieuwForm(f => ({ ...f, email: e.target.value }))} className={INPUT} />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-army-600 mb-1">PIN (4 cijfers) *</label>
+              <input type="password" inputMode="numeric" maxLength={4} value={nieuwForm.pin} onChange={e => setNieuwForm(f => ({ ...f, pin: e.target.value.replace(/\D/g, '').slice(0, 4) }))} className={INPUT} placeholder="••••" />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-army-600 mb-1">Peloton *</label>
+              <select value={nieuwForm.pelotoon} onChange={e => setNieuwForm(f => ({ ...f, pelotoon: e.target.value }))} className={INPUT}>
+                <option value="">Selecteer…</option>
+                {PELOTONEN.map(p => <option key={p} value={p}>{p}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-army-600 mb-1">Rol</label>
+              <select value={nieuwForm.rol} onChange={e => setNieuwForm(f => ({ ...f, rol: e.target.value as UserRole }))} className={INPUT}>
+                {beschikbareRollen.map(r => <option key={r} value={r}>{ROL_LABELS[r]}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-army-600 mb-1">Status</label>
+              <select value={nieuwForm.actief ? 'actief' : 'inactief'} onChange={e => setNieuwForm(f => ({ ...f, actief: e.target.value === 'actief' }))} className={INPUT}>
+                <option value="actief">Actief</option>
+                <option value="inactief">Inactief</option>
+              </select>
+            </div>
+          </div>
+          {nieuwError && <p className="text-red-600 text-xs">{nieuwError}</p>}
           <button
             onClick={slaNieuwOp}
             disabled={!nieuwForm.naam.trim() || !nieuwForm.email.trim() || nieuwForm.pin.length !== 4 || !nieuwForm.pelotoon}
@@ -200,7 +183,41 @@ export function UserBeheerPanel() {
                   <span className="font-semibold text-army-800 text-sm">Gebruiker bewerken</span>
                   <button onClick={() => setBewerkId(null)} className="text-army-400 hover:text-army-700"><X size={16} /></button>
                 </div>
-                <GebruikerFormVelden form={bewerkForm} onChange={setBewerkForm} error={bewerkError} />
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs font-medium text-army-600 mb-1">Naam *</label>
+                    <input type="text" value={bewerkForm.naam} onChange={e => setBewerkForm(f => ({ ...f, naam: e.target.value }))} className={INPUT} />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-army-600 mb-1">E-mail *</label>
+                    <input type="email" value={bewerkForm.email} onChange={e => setBewerkForm(f => ({ ...f, email: e.target.value }))} className={INPUT} />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-army-600 mb-1">PIN (4 cijfers) *</label>
+                    <input type="password" inputMode="numeric" maxLength={4} value={bewerkForm.pin} onChange={e => setBewerkForm(f => ({ ...f, pin: e.target.value.replace(/\D/g, '').slice(0, 4) }))} className={INPUT} placeholder="••••" />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-army-600 mb-1">Peloton *</label>
+                    <select value={bewerkForm.pelotoon} onChange={e => setBewerkForm(f => ({ ...f, pelotoon: e.target.value }))} className={INPUT}>
+                      <option value="">Selecteer…</option>
+                      {PELOTONEN.map(p => <option key={p} value={p}>{p}</option>)}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-army-600 mb-1">Rol</label>
+                    <select value={bewerkForm.rol} onChange={e => setBewerkForm(f => ({ ...f, rol: e.target.value as UserRole }))} className={INPUT}>
+                      {beschikbareRollen.map(r => <option key={r} value={r}>{ROL_LABELS[r]}</option>)}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-army-600 mb-1">Status</label>
+                    <select value={bewerkForm.actief ? 'actief' : 'inactief'} onChange={e => setBewerkForm(f => ({ ...f, actief: e.target.value === 'actief' }))} className={INPUT}>
+                      <option value="actief">Actief</option>
+                      <option value="inactief">Inactief</option>
+                    </select>
+                  </div>
+                </div>
+                {bewerkError && <p className="text-red-600 text-xs">{bewerkError}</p>}
                 <button
                   onClick={slaBewerkOp}
                   disabled={!bewerkForm.naam.trim() || !bewerkForm.email.trim() || bewerkForm.pin.length !== 4 || !bewerkForm.pelotoon}
