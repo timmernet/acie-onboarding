@@ -117,6 +117,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [contacten])
 
   useEffect(() => {
+    const handleStorage = (e: StorageEvent) => {
+      if (e.key === STORAGE_KEY) {
+        setUsers(loadUsers())
+      }
+      if (e.key === TAKEN_KEY) {
+        setTaken(loadTaken())
+      }
+      if (e.key === CONTACTEN_KEY) {
+        setContacten(loadContacten())
+      }
+    }
+    window.addEventListener('storage', handleStorage)
+    return () => window.removeEventListener('storage', handleStorage)
+  }, [])
+
+  useEffect(() => {
     fetch('/api/bestanden')
       .then(r => r.json())
       .then(setBestanden)

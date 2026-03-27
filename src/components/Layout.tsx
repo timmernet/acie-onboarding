@@ -12,7 +12,7 @@ export function Layout({ children }: Props) {
   const location = useLocation()
 
   const nieuweTakenCount = currentUser?.rol === 'reservist'
-    ? currentUser.taken.filter(t => t.nieuw).length
+    ? (users.find(u => u.id === currentUser.id)?.taken.filter(t => t.nieuw).length ?? 0)
     : 0
 
   const wachtendCount = currentUser?.rol === 'commandant' || currentUser?.rol === 'beheerder'

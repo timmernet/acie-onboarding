@@ -10,17 +10,19 @@ const CATEGORIE_KLEUREN: Record<string, string> = {
 }
 
 export function ReservistDashboard() {
-  const { currentUser, toggleTask, markeerTaakGezien, setOpmerking, taken } = useAuth()
+  const { currentUser, users, toggleTask, markeerTaakGezien, setOpmerking, taken } = useAuth()
   const [openTask, setOpenTask] = useState<string | null>(null)
 
   if (!currentUser) return null
 
-  const voltooid = currentUser.taken.filter(t => t.voltooid).length
+  const freshTaken = users.find(u => u.id === currentUser.id)?.taken ?? currentUser.taken
+
+  const voltooid = freshTaken.filter(t => t.voltooid).length
   const totaal = taken.length
   const pct = totaal > 0 ? Math.round((voltooid / totaal) * 100) : 0
 
   const getStatus = (taskId: string) =>
-    currentUser.taken.find(t => t.taskId === taskId)
+    freshTaken.find(t => t.taskId === taskId)
 
   const isGeblokkeerd = (vereistTaakId?: string) =>
     !!vereistTaakId && !getStatus(vereistTaakId)?.voltooid
@@ -28,11 +30,12 @@ export function ReservistDashboard() {
   const nieuweTaken = taken.filter(t => getStatus(t.id)?.nieuw)
 
   const openTaak = (taakId: string) => {
-    setOpenTask(prev => {
-      if (prev === taakId) return null
+    if (openTask === taakId) {
+      setOpenTask(null)
+    } else {
       markeerTaakGezien(taakId)
-      return taakId
-    })
+      setOpenTask(taakId)
+    }
   }
 
   return (
