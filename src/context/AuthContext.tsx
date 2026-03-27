@@ -34,6 +34,18 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | null>(null)
 
+async function verstuurEmail(type: string, naar: string, data: Record<string, string> = {}) {
+  try {
+    await fetch('/api/email', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ type, naar, ...data }),
+    })
+  } catch {
+    // email-fouten zijn niet blokkerend
+  }
+}
+
 const STORAGE_KEY = 'acie_users_v1'
 const SESSION_KEY = 'acie_session_v1'
 const TAKEN_KEY = 'acie_taken_v1'
@@ -123,7 +135,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }
 
   const activeerUser = (userId: string) => {
+    const user = users.find(u => u.id === userId)
     setUsers(prev => prev.map(u => u.id === userId ? { ...u, actief: true } : u))
+    if (user) verstuurEmail('activatie', user.email, { naam: user.naam })
   }
 
   const deactiveerUser = (userId: string) => {
@@ -182,6 +196,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       taken: currentTaken.map(t => ({ taskId: t.id, voltooid: false })),
     }
     setUsers(prev => [...prev, newUser])
+    verstuurEmail('registratie', email, { naam })
+    verstuurEmail('registratie_admin', '', { naam, email, pelotoon })
     return { ok: true }
   }
 

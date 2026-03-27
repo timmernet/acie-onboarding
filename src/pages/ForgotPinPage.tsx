@@ -2,12 +2,38 @@ import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { ChevronLeft, Mail, CheckCircle2 } from 'lucide-react'
 
+function findUserByEmail(email: string): { naam: string; pin: string } | null {
+  try {
+    const raw = localStorage.getItem('acie_users_v1')
+    const users: { naam: string; email: string; pin: string; actief: boolean }[] = raw ? JSON.parse(raw) : []
+    const user = users.find(u => u.email.toLowerCase() === email.toLowerCase() && u.actief)
+    return user ? { naam: user.naam, pin: user.pin } : null
+  } catch {
+    return null
+  }
+}
+
 export function ForgotPinPage() {
   const [email, setEmail] = useState('')
   const [sent, setSent] = useState(false)
+  const [loading, setLoading] = useState(false)
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    setLoading(true)
+    const user = findUserByEmail(email)
+    if (user) {
+      try {
+        await fetch('/api/email', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ type: 'pin-reset', naar: email, naam: user.naam, pin: user.pin }),
+        })
+      } catch {
+        // stil falen — toon altijd het succes-scherm
+      }
+    }
+    setLoading(false)
     setSent(true)
   }
 
@@ -35,7 +61,7 @@ export function ForgotPinPage() {
               </div>
               <h3 className="font-bold text-army-900 text-lg mb-2">E-mail verstuurd</h3>
               <p className="text-gray-500 text-sm">
-                Als er een account bestaat voor <strong>{email}</strong>, ontvang je een e-mail met instructies om je pincode opnieuw in te stellen.
+                Als er een account bestaat voor <strong>{email}</strong>, ontvang je een e-mail met je pincode.
               </p>
               <Link
                 to="/login"
@@ -47,7 +73,7 @@ export function ForgotPinPage() {
           ) : (
             <>
               <p className="text-gray-600 text-sm mb-5">
-                Voer je e-mailadres in en we sturen je een link om je pincode opnieuw in te stellen.
+                Voer je e-mailadres in en we sturen je pincode toe.
               </p>
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div>
@@ -68,9 +94,10 @@ export function ForgotPinPage() {
                 </div>
                 <button
                   type="submit"
-                  className="w-full bg-army-700 hover:bg-army-800 text-white font-semibold py-3 rounded-lg transition-colors text-sm"
+                  disabled={loading}
+                  className="w-full bg-army-700 hover:bg-army-800 disabled:bg-army-300 text-white font-semibold py-3 rounded-lg transition-colors text-sm"
                 >
-                  Herstelmail versturen
+                  {loading ? 'Versturen…' : 'Herstelmail versturen'}
                 </button>
               </form>
             </>
