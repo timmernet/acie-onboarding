@@ -86,19 +86,21 @@ app.delete('/api/bestanden/:id', (req, res) => {
 
 // --- Email ---
 
-const emailGeconfigureerd = !!(process.env.EMAIL_HOST && process.env.EMAIL_USER && process.env.EMAIL_PASS)
+const emailGeconfigureerd = !!process.env.EMAIL_HOST
 
-const transporter = emailGeconfigureerd
-  ? nodemailer.createTransport({
-      host: process.env.EMAIL_HOST,
-      port: Number(process.env.EMAIL_PORT) || 587,
-      secure: process.env.EMAIL_SECURE === 'true',
-      auth: { user: process.env.EMAIL_USER, pass: process.env.EMAIL_PASS },
-    })
-  : null
+const transporterConfig = {
+  host: process.env.EMAIL_HOST,
+  port: Number(process.env.EMAIL_PORT) || 587,
+  secure: process.env.EMAIL_SECURE === 'true',
+}
+if (process.env.EMAIL_USER && process.env.EMAIL_PASS) {
+  transporterConfig.auth = { user: process.env.EMAIL_USER, pass: process.env.EMAIL_PASS }
+}
+
+const transporter = emailGeconfigureerd ? nodemailer.createTransport(transporterConfig) : null
 
 if (!emailGeconfigureerd) {
-  console.warn('⚠️  Email niet geconfigureerd. Stel EMAIL_HOST, EMAIL_USER en EMAIL_PASS in via .env')
+  console.warn('⚠️  Email niet geconfigureerd. Stel EMAIL_HOST in via .env')
 }
 
 function emailTemplate(titel, inhoud) {
