@@ -7,7 +7,9 @@ interface AuthContextType {
   users: User[]
   taken: Taak[]
   contacten: Contact[]
-  login: (email: string, pin: string) => boolean
+  login: (email: string, pin: string) => 'ok' | 'fout' | 'wacht'
+  activeerUser: (userId: string) => void
+  afwijsUser: (userId: string) => void
   register: (naam: string, email: string, pin: string, pelotoon: string) => { ok: boolean; error?: string }
   logout: () => void
   updateUserRole: (userId: string, rol: UserRole) => void
@@ -100,16 +102,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       .catch(() => {})
   }, [])
 
-  const login = (email: string, pin: string): boolean => {
+  const login = (email: string, pin: string): 'ok' | 'fout' | 'wacht' => {
     const user = users.find(
       u => u.email.toLowerCase() === email.toLowerCase() && u.pin === pin
     )
-    if (!user) return false
+    if (!user) return 'fout'
+    if (!user.actief) return 'wacht'
     const now = new Date().toISOString()
     setUsers(prev => prev.map(u => u.id === user.id ? { ...u, laatstIngelogd: now } : u))
     setCurrentUser({ ...user, laatstIngelogd: now })
     sessionStorage.setItem(SESSION_KEY, user.id)
-    return true
+    return 'ok'
+  }
+
+  const activeerUser = (userId: string) => {
+    setUsers(prev => prev.map(u => u.id === userId ? { ...u, actief: true } : u))
+  }
+
+  const afwijsUser = (userId: string) => {
+    setUsers(prev => prev.filter(u => u.id !== userId))
   }
 
   const register = (
@@ -130,11 +141,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       rol: 'reservist',
       pelotoon,
       aangemeldOp: new Date().toISOString().split('T')[0],
+      actief: false,
       taken: currentTaken.map(t => ({ taskId: t.id, voltooid: false })),
     }
     setUsers(prev => [...prev, newUser])
-    setCurrentUser(newUser)
-    sessionStorage.setItem(SESSION_KEY, newUser.id)
     return { ok: true }
   }
 
@@ -271,7 +281,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     <AuthContext.Provider
       value={{
         currentUser, users, taken, contacten,
-        login, register, logout, updateUserRole, toggleTask, setOpmerking,
+        login, register, logout, updateUserRole, activeerUser, afwijsUser,
+        toggleTask, setOpmerking,
         moveTaakOmhoog, moveTaakOmlaag, addTaak, updateTaak, deleteTaak,
         addContact, updateContact, deleteContact,
         bestanden, uploadBestand, deleteBestand,

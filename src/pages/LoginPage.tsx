@@ -16,10 +16,13 @@ export function LoginPage() {
     setError('')
     setLoading(true)
     setTimeout(() => {
-      const ok = login(email, currentPin)
+      const result = login(email, currentPin)
       setLoading(false)
-      if (ok) {
+      if (result === 'ok') {
         navigate('/')
+      } else if (result === 'wacht') {
+        setError('Je account wacht op activatie door een commandant of beheerder.')
+        setPin('')
       } else {
         setError('E-mailadres of pincode is onjuist.')
         setPin('')

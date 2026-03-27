@@ -122,6 +122,7 @@ export const DEMO_USERS: User[] = [
     rol: 'beheerder',
     pelotoon: 'Staf',
     aangemeldOp: '2024-01-01',
+    actief: true,
     taken: TAKEN.map(t => ({ taskId: t.id, voltooid: true, voltooiDatum: '2024-01-10' })),
   },
   {
@@ -132,6 +133,7 @@ export const DEMO_USERS: User[] = [
     rol: 'commandant',
     pelotoon: '1e Peloton',
     aangemeldOp: '2024-01-01',
+    actief: true,
     taken: TAKEN.map(t => ({ taskId: t.id, voltooid: true, voltooiDatum: '2024-01-05' })),
   },
   {
@@ -142,6 +144,7 @@ export const DEMO_USERS: User[] = [
     rol: 'reservist',
     pelotoon: '1e Peloton',
     aangemeldOp: '2024-03-01',
+    actief: true,
     taken: [
       { taskId: 't1', voltooid: true, voltooiDatum: '2024-03-05' },
       { taskId: 't2', voltooid: true, voltooiDatum: '2024-03-07' },
@@ -159,6 +162,7 @@ export const DEMO_USERS: User[] = [
     rol: 'reservist',
     pelotoon: '1e Peloton',
     aangemeldOp: '2024-03-05',
+    actief: true,
     taken: [
       { taskId: 't1', voltooid: true, voltooiDatum: '2024-03-08' },
       { taskId: 't2', voltooid: false },
@@ -176,6 +180,7 @@ export const DEMO_USERS: User[] = [
     rol: 'reservist',
     pelotoon: '2e Peloton',
     aangemeldOp: '2024-03-10',
+    actief: true,
     taken: TAKEN.map(t => ({ taskId: t.id, voltooid: false })),
   },
   {
@@ -186,6 +191,7 @@ export const DEMO_USERS: User[] = [
     rol: 'reservist',
     pelotoon: '2e Peloton',
     aangemeldOp: '2024-03-12',
+    actief: true,
     taken: TAKEN.map(t => ({ taskId: t.id, voltooid: true, voltooiDatum: '2024-03-20' })),
   },
 ]

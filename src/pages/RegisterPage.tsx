@@ -1,13 +1,12 @@
 import { useState } from 'react'
-import { useNavigate, Link } from 'react-router-dom'
+import { Link } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { PinInput } from '../components/PinInput'
-import { AlertCircle, CheckCircle2, ChevronLeft } from 'lucide-react'
+import { AlertCircle, CheckCircle2, ChevronLeft, Clock } from 'lucide-react'
 import { PELOTONEN } from '../data/dummyData'
 
 export function RegisterPage() {
   const { register } = useAuth()
-  const navigate = useNavigate()
   const [naam, setNaam] = useState('')
   const [email, setEmail] = useState('')
   const [pelotoon, setPelotoon] = useState('')
@@ -15,6 +14,7 @@ export function RegisterPage() {
   const [pinBevestig, setPinBevestig] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
+  const [geregistreerd, setGeregistreerd] = useState(false)
 
   const pinMatch = pin.length === 4 && pinBevestig.length === 4 && pin === pinBevestig
 
@@ -28,9 +28,34 @@ export function RegisterPage() {
     setTimeout(() => {
       const result = register(naam, email, pin, pelotoon)
       setLoading(false)
-      if (result.ok) navigate('/')
+      if (result.ok) setGeregistreerd(true)
       else setError(result.error ?? 'Registratie mislukt.')
     }, 300)
+  }
+
+  if (geregistreerd) {
+    return (
+      <div className="min-h-screen bg-army-800 flex flex-col items-center justify-center px-4">
+        <div className="w-full max-w-sm bg-white rounded-2xl shadow-2xl p-8 text-center space-y-4">
+          <div className="flex justify-center">
+            <div className="w-14 h-14 rounded-full bg-amber-100 flex items-center justify-center">
+              <Clock size={28} className="text-amber-600" />
+            </div>
+          </div>
+          <h2 className="text-army-900 font-bold text-xl">Account aangevraagd</h2>
+          <p className="text-army-600 text-sm">
+            Je account voor <span className="font-semibold">{email}</span> is aangemaakt en wacht op activatie door een commandant of beheerder.
+          </p>
+          <p className="text-army-500 text-xs">Je ontvangt toegang zodra je account is goedgekeurd.</p>
+          <Link
+            to="/login"
+            className="block w-full bg-army-700 hover:bg-army-800 text-white font-semibold py-3 rounded-lg transition-colors text-sm"
+          >
+            Terug naar inloggen
+          </Link>
+        </div>
+      </div>
+    )
   }
 
   return (

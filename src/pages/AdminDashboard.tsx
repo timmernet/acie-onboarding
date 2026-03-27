@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useAuth } from '../context/AuthContext'
 import type { Taak, Contact, UserRole } from '../types'
-import { Shield, UserCheck, Users, Search, Plus, Pencil, Trash2, X, ClipboardList, BookOpen, ChevronUp, ChevronDown } from 'lucide-react'
+import { Shield, UserCheck, UserX, Users, Search, Plus, Pencil, Trash2, X, ClipboardList, BookOpen, ChevronUp, ChevronDown, Clock } from 'lucide-react'
 
 const ROL_LABELS: Record<UserRole, string> = {
   reservist: 'Reservist',
@@ -24,7 +24,7 @@ const leegeContact = (): Omit<Contact, 'id'> => ({ naam: '', rang: '', functie: 
 
 export function AdminDashboard() {
   const {
-    users, currentUser, updateUserRole,
+    users, currentUser, updateUserRole, activeerUser, afwijsUser,
     taken, moveTaakOmhoog, moveTaakOmlaag, addTaak, updateTaak, deleteTaak,
     contacten, addContact, updateContact, deleteContact,
   } = useAuth()
@@ -51,8 +51,9 @@ export function AdminDashboard() {
   const [verwijderContactId, setVerwijderContactId] = useState<string | null>(null)
 
   // --- Gebruikers ---
+  const wachtend = users.filter(u => !u.actief)
   const gefilterd = users
-    .filter(u => u.id !== currentUser?.id)
+    .filter(u => u.id !== currentUser?.id && u.actief)
     .filter(u => {
       const q = zoek.toLowerCase()
       return (
@@ -62,9 +63,9 @@ export function AdminDashboard() {
       )
     })
 
-  const totaalReservisten = users.filter(u => u.rol === 'reservist').length
-  const totaalCommandanten = users.filter(u => u.rol === 'commandant').length
-  const totaalBeheerders = users.filter(u => u.rol === 'beheerder').length
+  const totaalReservisten = users.filter(u => u.rol === 'reservist' && u.actief).length
+  const totaalCommandanten = users.filter(u => u.rol === 'commandant' && u.actief).length
+  const totaalBeheerders = users.filter(u => u.rol === 'beheerder' && u.actief).length
 
   // --- Taken ---
   const handleTaakOpslaan = () => {
@@ -152,6 +153,46 @@ export function AdminDashboard() {
       {/* === GEBRUIKERS TAB === */}
       {actieveTab === 'Gebruikers' && (
         <div className="space-y-4">
+          {/* Wachtende activaties */}
+          {wachtend.length > 0 && (
+            <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 space-y-3">
+              <div className="flex items-center gap-2">
+                <Clock size={16} className="text-amber-600" />
+                <h3 className="font-semibold text-amber-800 text-sm">
+                  Wachtende activaties ({wachtend.length})
+                </h3>
+              </div>
+              <div className="space-y-2">
+                {wachtend.map(user => (
+                  <div key={user.id} className="bg-white rounded-lg border border-amber-100 p-3 flex items-center gap-3">
+                    <div className="w-9 h-9 rounded-full bg-amber-100 text-amber-700 flex items-center justify-center font-bold text-xs flex-shrink-0">
+                      {user.naam.split(' ').filter(Boolean).slice(0, 2).map(n => n[0]).join('').toUpperCase()}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="font-semibold text-army-900 text-sm">{user.naam}</div>
+                      <div className="text-army-400 text-xs truncate">{user.email} · {user.pelotoon}</div>
+                      <div className="text-army-400 text-xs">Aangemeld op {new Date(user.aangemeldOp).toLocaleDateString('nl-NL')}</div>
+                    </div>
+                    <div className="flex gap-1.5 flex-shrink-0">
+                      <button
+                        onClick={() => activeerUser(user.id)}
+                        className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-green-600 hover:bg-green-700 text-white text-xs font-medium transition-colors"
+                      >
+                        <UserCheck size={13} /> Activeer
+                      </button>
+                      <button
+                        onClick={() => afwijsUser(user.id)}
+                        className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-red-100 hover:bg-red-200 text-red-700 text-xs font-medium transition-colors"
+                      >
+                        <UserX size={13} /> Afwijzen
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
           {/* Stats */}
           <div className="grid grid-cols-3 gap-3">
             <div className="bg-white rounded-xl border border-army-100 shadow-sm p-4 text-center">

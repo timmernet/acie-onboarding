@@ -16,6 +16,7 @@ export interface User {
   pelotoon: string
   aangemeldOp: string
   taken: UserTask[]
+  actief: boolean
   laatstIngelogd?: string
 }
 
