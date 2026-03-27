@@ -14,6 +14,7 @@ interface AuthContextType {
   addUserDirect: (data: Omit<User, 'id' | 'taken' | 'aangemeldOp' | 'laatstIngelogd'>) => { ok: boolean; error?: string }
   updateUser: (data: Pick<User, 'id' | 'naam' | 'email' | 'pin' | 'pelotoon' | 'rol'>) => { ok: boolean; error?: string }
   deleteUser: (userId: string) => void
+  setPinByEmail: (email: string, pin: string) => boolean
   register: (naam: string, email: string, pin: string, pelotoon: string) => { ok: boolean; error?: string }
   logout: () => void
   updateUserRole: (userId: string, rol: UserRole) => void
@@ -172,6 +173,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const deleteUser = (userId: string) => {
     setUsers(prev => prev.filter(u => u.id !== userId))
+  }
+
+  const setPinByEmail = (email: string, pin: string): boolean => {
+    const exists = users.find(u => u.email.toLowerCase() === email.toLowerCase())
+    if (!exists) return false
+    setUsers(prev => prev.map(u =>
+      u.email.toLowerCase() === email.toLowerCase() ? { ...u, pin } : u
+    ))
+    return true
   }
 
   const register = (
@@ -335,7 +345,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       value={{
         currentUser, users, taken, contacten,
         login, register, logout, updateUserRole,
-        activeerUser, deactiveerUser, afwijsUser, addUserDirect, updateUser, deleteUser,
+        activeerUser, deactiveerUser, afwijsUser, addUserDirect, updateUser, deleteUser, setPinByEmail,
         toggleTask, setOpmerking,
         moveTaakOmhoog, moveTaakOmlaag, addTaak, updateTaak, deleteTaak,
         addContact, updateContact, deleteContact,

@@ -4,7 +4,7 @@ import { PELOTONEN } from '../data/dummyData'
 import type { User, UserRole } from '../types'
 import {
   UserCheck, UserX, Clock, Plus, Pencil, Trash2, X, Check,
-  ShieldOff, Shield,
+  ShieldOff, Shield, KeyRound,
 } from 'lucide-react'
 
 const ROL_LABELS: Record<UserRole, string> = {
@@ -24,14 +24,13 @@ const INPUT = 'w-full px-3 py-2 rounded-lg border border-army-200 bg-white focus
 type GebruikerForm = {
   naam: string
   email: string
-  pin: string
   pelotoon: string
   rol: UserRole
   actief: boolean
 }
 
 const leegFormulier = (): GebruikerForm => ({
-  naam: '', email: '', pin: '', pelotoon: '', rol: 'reservist', actief: true,
+  naam: '', email: '', pelotoon: '', rol: 'reservist', actief: true,
 })
 
 export function UserBeheerPanel() {
@@ -48,6 +47,7 @@ export function UserBeheerPanel() {
   const [bewerkId, setBewerkId] = useState<string | null>(null)
   const [bewerkForm, setBewerkForm] = useState<GebruikerForm>(leegFormulier())
   const [bewerkError, setBewerkError] = useState('')
+  const [resetVerstuurd, setResetVerstuurd] = useState<string | null>(null)
 
   const [verwijderId, setVerwijderId] = useState<string | null>(null)
 
@@ -61,14 +61,33 @@ export function UserBeheerPanel() {
 
   const openBewerk = (u: User) => {
     setBewerkId(u.id)
-    setBewerkForm({ naam: u.naam, email: u.email, pin: u.pin, pelotoon: u.pelotoon, rol: u.rol, actief: u.actief })
+    setBewerkForm({ naam: u.naam, email: u.email, pelotoon: u.pelotoon, rol: u.rol, actief: u.actief })
     setBewerkError('')
   }
 
+  const stuurPinReset = async (u: User) => {
+    try {
+      await fetch('/api/pin-reset/aanvragen', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: u.email, naam: u.naam }),
+      })
+    } catch { /* stil falen */ }
+    setResetVerstuurd(u.id)
+    setTimeout(() => setResetVerstuurd(null), 3000)
+  }
+
   const slaNieuwOp = () => {
-    if (!nieuwForm.naam.trim() || !nieuwForm.email.trim() || nieuwForm.pin.length !== 4 || !nieuwForm.pelotoon) return
-    const result = addUserDirect(nieuwForm)
+    if (!nieuwForm.naam.trim() || !nieuwForm.email.trim() || !nieuwForm.pelotoon) return
+    // Nieuwe gebruikers aangemaakt door beheer krijgen een tijdelijke pin '0000'
+    // en ontvangen direct een reset-link per email
+    const result = addUserDirect({ ...nieuwForm, pin: '0000' })
     if (!result.ok) { setNieuwError(result.error ?? 'Mislukt.'); return }
+    fetch('/api/pin-reset/aanvragen', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: nieuwForm.email, naam: nieuwForm.naam }),
+    }).catch(() => {})
     setNieuwOpen(false)
     setNieuwForm(leegFormulier())
     setNieuwError('')
@@ -76,8 +95,9 @@ export function UserBeheerPanel() {
 
   const slaBewerkOp = () => {
     if (!bewerkId) return
-    if (!bewerkForm.naam.trim() || !bewerkForm.email.trim() || bewerkForm.pin.length !== 4 || !bewerkForm.pelotoon) return
-    const result = updateUser({ id: bewerkId, ...bewerkForm })
+    if (!bewerkForm.naam.trim() || !bewerkForm.email.trim() || !bewerkForm.pelotoon) return
+    const bewerkUser = actief.find(u => u.id === bewerkId)
+    const result = updateUser({ id: bewerkId, pin: bewerkUser?.pin ?? '0000', ...bewerkForm })
     if (!result.ok) { setBewerkError(result.error ?? 'Mislukt.'); return }
     setBewerkId(null)
     setBewerkError('')
@@ -138,10 +158,6 @@ export function UserBeheerPanel() {
               <input type="email" value={nieuwForm.email} onChange={e => setNieuwForm(f => ({ ...f, email: e.target.value }))} className={INPUT} />
             </div>
             <div>
-              <label className="block text-xs font-medium text-army-600 mb-1">PIN (4 cijfers) *</label>
-              <input type="password" inputMode="numeric" maxLength={4} value={nieuwForm.pin} onChange={e => setNieuwForm(f => ({ ...f, pin: e.target.value.replace(/\D/g, '').slice(0, 4) }))} className={INPUT} placeholder="••••" />
-            </div>
-            <div>
               <label className="block text-xs font-medium text-army-600 mb-1">Peloton *</label>
               <select value={nieuwForm.pelotoon} onChange={e => setNieuwForm(f => ({ ...f, pelotoon: e.target.value }))} className={INPUT}>
                 <option value="">Selecteer…</option>
@@ -162,10 +178,11 @@ export function UserBeheerPanel() {
               </select>
             </div>
           </div>
+          <p className="text-army-400 text-xs">De gebruiker ontvangt een e-mail om zelf een pincode in te stellen.</p>
           {nieuwError && <p className="text-red-600 text-xs">{nieuwError}</p>}
           <button
             onClick={slaNieuwOp}
-            disabled={!nieuwForm.naam.trim() || !nieuwForm.email.trim() || nieuwForm.pin.length !== 4 || !nieuwForm.pelotoon}
+            disabled={!nieuwForm.naam.trim() || !nieuwForm.email.trim() || !nieuwForm.pelotoon}
             className="w-full py-2 rounded-lg bg-army-700 text-white text-sm font-semibold hover:bg-army-800 disabled:opacity-40 transition-colors"
           >
             Gebruiker aanmaken
@@ -193,10 +210,6 @@ export function UserBeheerPanel() {
                     <input type="email" value={bewerkForm.email} onChange={e => setBewerkForm(f => ({ ...f, email: e.target.value }))} className={INPUT} />
                   </div>
                   <div>
-                    <label className="block text-xs font-medium text-army-600 mb-1">PIN (4 cijfers) *</label>
-                    <input type="password" inputMode="numeric" maxLength={4} value={bewerkForm.pin} onChange={e => setBewerkForm(f => ({ ...f, pin: e.target.value.replace(/\D/g, '').slice(0, 4) }))} className={INPUT} placeholder="••••" />
-                  </div>
-                  <div>
                     <label className="block text-xs font-medium text-army-600 mb-1">Peloton *</label>
                     <select value={bewerkForm.pelotoon} onChange={e => setBewerkForm(f => ({ ...f, pelotoon: e.target.value }))} className={INPUT}>
                       <option value="">Selecteer…</option>
@@ -220,7 +233,7 @@ export function UserBeheerPanel() {
                 {bewerkError && <p className="text-red-600 text-xs">{bewerkError}</p>}
                 <button
                   onClick={slaBewerkOp}
-                  disabled={!bewerkForm.naam.trim() || !bewerkForm.email.trim() || bewerkForm.pin.length !== 4 || !bewerkForm.pelotoon}
+                  disabled={!bewerkForm.naam.trim() || !bewerkForm.email.trim() || !bewerkForm.pelotoon}
                   className="w-full py-2 rounded-lg bg-army-700 text-white text-sm font-semibold hover:bg-army-800 disabled:opacity-40 transition-colors"
                 >
                   Wijzigingen opslaan
@@ -242,6 +255,13 @@ export function UserBeheerPanel() {
                 <div className="flex gap-1 flex-shrink-0">
                   <button onClick={() => openBewerk(u)} className="p-1.5 rounded-lg text-army-400 hover:text-army-800 hover:bg-army-50 transition-colors" title="Bewerken">
                     <Pencil size={14} />
+                  </button>
+                  <button
+                    onClick={() => stuurPinReset(u)}
+                    className={`p-1.5 rounded-lg transition-colors ${resetVerstuurd === u.id ? 'text-green-600 bg-green-50' : 'text-army-400 hover:text-army-800 hover:bg-army-50'}`}
+                    title="PIN-reset e-mail sturen"
+                  >
+                    <KeyRound size={14} />
                   </button>
                   <button
                     onClick={() => u.actief ? deactiveerUser(u.id) : activeerUser(u.id)}

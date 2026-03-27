@@ -3,6 +3,7 @@ import express from 'express'
 import multer from 'multer'
 import cors from 'cors'
 import nodemailer from 'nodemailer'
+import { randomBytes } from 'crypto'
 import { readFileSync, writeFileSync, existsSync, mkdirSync, unlinkSync } from 'fs'
 import { join, dirname } from 'path'
 import { fileURLToPath } from 'url'
@@ -164,16 +165,70 @@ const TEMPLATES = {
       <p>Goed nieuws — je account voor het Reservisten Onboarding Portaal is geactiveerd. Je kunt nu inloggen.</p>
     `),
   }),
-  'pin-reset': ({ naam, pin }) => ({
-    onderwerp: 'Je pincode',
-    html: emailTemplate('Pincode herinnering', `
+  'pin-reset': ({ naam, resetUrl }) => ({
+    onderwerp: 'Pincode opnieuw instellen',
+    html: emailTemplate('Pincode opnieuw instellen', `
       <p>Beste ${naam},</p>
-      <p>Je hebt een pincode-herinnering aangevraagd. Je huidige pincode is:</p>
-      <div class="pin">${pin}</div>
-      <p>Bewaar deze code op een veilige plek. Je kunt je pincode wijzigen via je profiel.</p>
+      <p>Er is een verzoek gedaan om je pincode opnieuw in te stellen. Klik op de knop hieronder om een nieuwe pincode te kiezen:</p>
+      <p style="text-align:center;margin:24px 0">
+        <a href="${resetUrl}" style="background:#1e4010;color:white;padding:12px 28px;border-radius:8px;text-decoration:none;font-weight:bold;font-size:14px">
+          Nieuwe pincode instellen
+        </a>
+      </p>
+      <p style="font-size:12px;color:#999">Of kopieer deze link: <a href="${resetUrl}">${resetUrl}</a></p>
+      <p style="font-size:12px;color:#999">Deze link is 1 uur geldig. Als je dit verzoek niet hebt gedaan, kun je deze e-mail negeren.</p>
     `),
   }),
 }
+
+// --- PIN reset tokens (in-memory, geldig 1 uur) ---
+const pinResetTokens = new Map() // token -> { email, naam, expires }
+
+app.post('/api/pin-reset/aanvragen', async (req, res) => {
+  const { email, naam } = req.body
+  if (!email || !naam) return res.status(400).json({ error: 'email en naam zijn verplicht' })
+
+  const token = randomBytes(32).toString('hex')
+  const expires = Date.now() + 60 * 60 * 1000 // 1 uur
+  pinResetTokens.set(token, { email, naam, expires })
+
+  const appUrl = process.env.APP_URL || 'http://localhost:5173'
+  const resetUrl = `${appUrl}/pin-reset?token=${token}`
+
+  if (!emailGeconfigureerd) {
+    console.log(`[PIN reset gesimuleerd] ${email} → ${resetUrl}`)
+    return res.json({ ok: true, gesimuleerd: true })
+  }
+
+  try {
+    const { onderwerp, html } = TEMPLATES['pin-reset']({ naam, resetUrl })
+    await transporter.sendMail({
+      from: process.env.EMAIL_FROM || process.env.EMAIL_USER,
+      to: email,
+      subject: onderwerp,
+      html,
+    })
+    res.json({ ok: true })
+  } catch (err) {
+    console.error('PIN reset e-mail mislukt:', err.message)
+    res.status(500).json({ error: 'E-mail versturen mislukt' })
+  }
+})
+
+app.post('/api/pin-reset/uitvoeren', (req, res) => {
+  const { token } = req.body
+  if (!token) return res.status(400).json({ error: 'token is verplicht' })
+
+  const data = pinResetTokens.get(token)
+  if (!data) return res.status(404).json({ error: 'Ongeldig of verlopen token' })
+  if (Date.now() > data.expires) {
+    pinResetTokens.delete(token)
+    return res.status(410).json({ error: 'Link is verlopen' })
+  }
+
+  pinResetTokens.delete(token)
+  res.json({ ok: true, email: data.email })
+})
 
 app.post('/api/email', async (req, res) => {
   const { type, naar: naarRaw, naam, email, pelotoon, pin } = req.body

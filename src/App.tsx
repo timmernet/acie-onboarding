@@ -5,6 +5,7 @@ import { Layout } from './components/Layout'
 import { LoginPage } from './pages/LoginPage'
 import { RegisterPage } from './pages/RegisterPage'
 import { ForgotPinPage } from './pages/ForgotPinPage'
+import { PinResetPage } from './pages/PinResetPage'
 import { ReservistDashboard } from './pages/ReservistDashboard'
 import { CommanderDashboard } from './pages/CommanderDashboard'
 import { AdminDashboard } from './pages/AdminDashboard'
@@ -26,6 +27,7 @@ function AppRoutes() {
       <Route path="/login" element={<LoginPage />} />
       <Route path="/registreer" element={<RegisterPage />} />
       <Route path="/vergeten" element={<ForgotPinPage />} />
+      <Route path="/pin-reset" element={<PinResetPage />} />
 
       {/* Root redirect */}
       <Route path="/" element={<RootRedirect />} />

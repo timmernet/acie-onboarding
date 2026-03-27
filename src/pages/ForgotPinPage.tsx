@@ -2,12 +2,12 @@ import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { ChevronLeft, Mail, CheckCircle2 } from 'lucide-react'
 
-function findUserByEmail(email: string): { naam: string; pin: string } | null {
+function findUserByEmail(email: string): { naam: string } | null {
   try {
     const raw = localStorage.getItem('acie_users_v1')
-    const users: { naam: string; email: string; pin: string; actief: boolean }[] = raw ? JSON.parse(raw) : []
+    const users: { naam: string; email: string; actief: boolean }[] = raw ? JSON.parse(raw) : []
     const user = users.find(u => u.email.toLowerCase() === email.toLowerCase() && u.actief)
-    return user ? { naam: user.naam, pin: user.pin } : null
+    return user ? { naam: user.naam } : null
   } catch {
     return null
   }
@@ -24,10 +24,10 @@ export function ForgotPinPage() {
     const user = findUserByEmail(email)
     if (user) {
       try {
-        await fetch('/api/email', {
+        await fetch('/api/pin-reset/aanvragen', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ type: 'pin-reset', naar: email, naam: user.naam, pin: user.pin }),
+          body: JSON.stringify({ email, naam: user.naam }),
         })
       } catch {
         // stil falen — toon altijd het succes-scherm
@@ -61,7 +61,7 @@ export function ForgotPinPage() {
               </div>
               <h3 className="font-bold text-army-900 text-lg mb-2">E-mail verstuurd</h3>
               <p className="text-gray-500 text-sm">
-                Als er een account bestaat voor <strong>{email}</strong>, ontvang je een e-mail met je pincode.
+                Als er een account bestaat voor <strong>{email}</strong>, ontvang je een e-mail met een link om je pincode opnieuw in te stellen.
               </p>
               <Link
                 to="/login"
@@ -73,7 +73,7 @@ export function ForgotPinPage() {
           ) : (
             <>
               <p className="text-gray-600 text-sm mb-5">
-                Voer je e-mailadres in en we sturen je pincode toe.
+                Voer je e-mailadres in. Je ontvangt een link om een nieuwe pincode in te stellen.
               </p>
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div>
