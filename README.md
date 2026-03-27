@@ -1,5 +1,8 @@
 # Onboarding — A-Compagnie 30IBB
 
+Resume coding session:
+claude --resume ba594483-6d60-4988-9d94-da1055aa15b5
+
 Reservisten onboarding portaal voor A-Compagnie, 30e Infanteriebataljon · 13 Lichte Brigade.
 
 ## Starten
