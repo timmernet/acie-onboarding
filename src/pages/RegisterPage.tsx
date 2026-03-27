@@ -18,19 +18,17 @@ export function RegisterPage() {
 
   const pinMatch = pin.length === 4 && pinBevestig.length === 4 && pin === pinBevestig
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError('')
     if (pin.length < 4) { setError('Kies een 4-cijferige pincode.'); return }
     if (pin !== pinBevestig) { setError('Pincodes komen niet overeen.'); return }
     if (!pelotoon) { setError('Selecteer je peloton.'); return }
     setLoading(true)
-    setTimeout(() => {
-      const result = register(naam, email, pin, pelotoon)
-      setLoading(false)
-      if (result.ok) setGeregistreerd(true)
-      else setError(result.error ?? 'Registratie mislukt.')
-    }, 300)
+    const result = await register(naam, email, pin, pelotoon)
+    setLoading(false)
+    if (result.ok) setGeregistreerd(true)
+    else setError(result.error ?? 'Registratie mislukt.')
   }
 
   if (geregistreerd) {

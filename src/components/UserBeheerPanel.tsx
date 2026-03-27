@@ -68,37 +68,29 @@ export function UserBeheerPanel() {
 
   const stuurPinReset = async (u: User) => {
     try {
-      await fetch('/api/pin-reset/aanvragen', {
+      await fetch('/api/auth/pin-reset/aanvragen', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: u.email, naam: u.naam }),
+        body: JSON.stringify({ email: u.email }),
       })
     } catch { /* stil falen */ }
     setResetVerstuurd(u.id)
     setTimeout(() => setResetVerstuurd(null), 3000)
   }
 
-  const slaNieuwOp = () => {
+  const slaNieuwOp = async () => {
     if (!nieuwForm.naam.trim() || !nieuwForm.email.trim() || !nieuwForm.pelotoon) return
-    // Nieuwe gebruikers aangemaakt door beheer krijgen een tijdelijke pin '0000'
-    // en ontvangen direct een reset-link per email
-    const result = addUserDirect({ ...nieuwForm, pin: '0000' })
+    const result = await addUserDirect(nieuwForm)
     if (!result.ok) { setNieuwError(result.error ?? 'Mislukt.'); return }
-    fetch('/api/pin-reset/aanvragen', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email: nieuwForm.email, naam: nieuwForm.naam }),
-    }).catch(() => {})
     setNieuwOpen(false)
     setNieuwForm(leegFormulier())
     setNieuwError('')
   }
 
-  const slaBewerkOp = () => {
+  const slaBewerkOp = async () => {
     if (!bewerkId) return
     if (!bewerkForm.naam.trim() || !bewerkForm.email.trim() || !bewerkForm.pelotoon) return
-    const bewerkUser = actief.find(u => u.id === bewerkId)
-    const result = updateUser({ id: bewerkId, pin: bewerkUser?.pin ?? '0000', ...bewerkForm })
+    const result = await updateUser({ id: bewerkId, ...bewerkForm })
     if (!result.ok) { setBewerkError(result.error ?? 'Mislukt.'); return }
     setBewerkId(null)
     setBewerkError('')
@@ -123,10 +115,10 @@ export function UserBeheerPanel() {
                 <div className="text-army-400 text-xs truncate">{u.email} · {u.pelotoon}</div>
               </div>
               <div className="flex gap-1.5 flex-shrink-0">
-                <button onClick={() => activeerUser(u.id)} className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-green-600 hover:bg-green-700 text-white text-xs font-medium transition-colors">
+                <button onClick={() => void activeerUser(u.id)} className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-green-600 hover:bg-green-700 text-white text-xs font-medium transition-colors">
                   <UserCheck size={13} /> Activeer
                 </button>
-                <button onClick={() => afwijsUser(u.id)} className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-red-100 hover:bg-red-200 text-red-700 text-xs font-medium transition-colors">
+                <button onClick={() => void afwijsUser(u.id)} className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-red-100 hover:bg-red-200 text-red-700 text-xs font-medium transition-colors">
                   <UserX size={13} /> Afwijzen
                 </button>
               </div>
@@ -284,7 +276,7 @@ export function UserBeheerPanel() {
                     </button>
                   )}
                   <button
-                    onClick={() => u.actief ? deactiveerUser(u.id) : activeerUser(u.id)}
+                    onClick={() => void (u.actief ? deactiveerUser(u.id) : activeerUser(u.id))}
                     className="p-1.5 rounded-lg text-army-400 hover:text-army-800 hover:bg-army-50 transition-colors"
                     title={u.actief ? 'Deactiveren' : 'Activeren'}
                   >
@@ -292,7 +284,7 @@ export function UserBeheerPanel() {
                   </button>
                   {verwijderId === u.id ? (
                     <div className="flex items-center gap-1">
-                      <button onClick={() => { deleteUser(u.id); setVerwijderId(null) }} className="p-1.5 rounded-lg bg-red-600 text-white hover:bg-red-700 transition-colors">
+                      <button onClick={() => { void deleteUser(u.id); setVerwijderId(null) }} className="p-1.5 rounded-lg bg-red-600 text-white hover:bg-red-700 transition-colors">
                         <Check size={14} />
                       </button>
                       <button onClick={() => setVerwijderId(null)} className="p-1.5 rounded-lg text-army-400 hover:bg-army-50 transition-colors">

@@ -12,7 +12,6 @@ export interface User {
   id: string
   naam: string
   email: string
-  pin: string
   rol: UserRole
   pelotoon: string
   aangemeldOp: string

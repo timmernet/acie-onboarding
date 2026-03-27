@@ -1,0 +1,77 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id             String     @id @default(cuid())
+  naam           String
+  email          String     @unique
+  pin            String
+  rol            String
+  pelotoon       String
+  aangemeldOp    String
+  actief         Boolean    @default(false)
+  laatstIngelogd String?
+  taken          UserTask[]
+}
+
+model Taak {
+  id            String     @id @default(cuid())
+  titel         String
+  beschrijving  String
+  categorie     String
+  contactId     String     @default("")
+  vereistTaakId String?
+  volgorde      Int        @default(0)
+  userTaken     UserTask[]
+}
+
+model UserTask {
+  id           String  @id @default(cuid())
+  userId       String
+  taakId       String
+  voltooid     Boolean @default(false)
+  voltooiDatum String?
+  opmerking    String?
+  nieuw        Boolean @default(false)
+  user         User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  taak         Taak    @relation(fields: [taakId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, taakId])
+}
+
+model Contact {
+  id       String @id @default(cuid())
+  naam     String
+  rang     String
+  functie  String
+  telefoon String
+  email    String
+  tags     String @default("[]")
+}
+
+model Bestand {
+  id           String @id @default(cuid())
+  naam         String
+  beschrijving String @default("")
+  categorie    String @default("")
+  bestandsnaam String
+  bestandstype String
+  grootte      Int
+  geuploadOp   String
+  geuploadDoor String @default("Onbekend")
+  url          String
+}
+
+model PinResetToken {
+  token   String  @id
+  email   String
+  naam    String
+  expires BigInt
+  used    Boolean @default(false)
+}

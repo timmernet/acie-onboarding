@@ -2,17 +2,6 @@ import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { ChevronLeft, Mail, CheckCircle2 } from 'lucide-react'
 
-function findUserByEmail(email: string): { naam: string } | null {
-  try {
-    const raw = localStorage.getItem('acie_users_v1')
-    const users: { naam: string; email: string; actief: boolean }[] = raw ? JSON.parse(raw) : []
-    const user = users.find(u => u.email.toLowerCase() === email.toLowerCase() && u.actief)
-    return user ? { naam: user.naam } : null
-  } catch {
-    return null
-  }
-}
-
 export function ForgotPinPage() {
   const [email, setEmail] = useState('')
   const [sent, setSent] = useState(false)
@@ -21,17 +10,14 @@ export function ForgotPinPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoading(true)
-    const user = findUserByEmail(email)
-    if (user) {
-      try {
-        await fetch('/api/pin-reset/aanvragen', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email, naam: user.naam }),
-        })
-      } catch {
-        // stil falen — toon altijd het succes-scherm
-      }
+    try {
+      await fetch('/api/auth/pin-reset/aanvragen', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email }),
+      })
+    } catch {
+      // stil falen — toon altijd het succes-scherm
     }
     setLoading(false)
     setSent(true)

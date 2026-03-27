@@ -1,14 +1,11 @@
 import { useState, useEffect } from 'react'
 import { useSearchParams, Link } from 'react-router-dom'
-import { useAuth } from '../context/AuthContext'
 import { PinInput } from '../components/PinInput'
 import { CheckCircle2, AlertCircle } from 'lucide-react'
 
 export function PinResetPage() {
   const [searchParams] = useSearchParams()
   const token = searchParams.get('token') ?? ''
-  const { setPinByEmail } = useAuth()
-
   const [pin, setPin] = useState('')
   const [pinBevestig, setPinBevestig] = useState('')
   const [status, setStatus] = useState<'invoeren' | 'opgeslagen' | 'fout'>('invoeren')
@@ -29,22 +26,16 @@ export function PinResetPage() {
     setFoutmelding('')
     setLoading(true)
     try {
-      const res = await fetch('/api/pin-reset/uitvoeren', {
+      const res = await fetch('/api/auth/pin-reset/toepassen', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ token }),
+        body: JSON.stringify({ token, pin }),
       })
       const data = await res.json()
       if (!res.ok) {
         setFoutmelding(data.error === 'Link is verlopen'
           ? 'Deze resetlink is verlopen. Vraag een nieuwe aan.'
-          : 'Ongeldige of al gebruikte resetlink.')
-        setLoading(false)
-        return
-      }
-      const ok = setPinByEmail(data.email, pin)
-      if (!ok) {
-        setFoutmelding('Gebruiker niet gevonden. Probeer opnieuw in te loggen.')
+          : data.error ?? 'Ongeldige of al gebruikte resetlink.')
         setLoading(false)
         return
       }

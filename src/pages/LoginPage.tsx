@@ -12,22 +12,20 @@ export function LoginPage() {
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
 
-  const doLogin = (currentPin: string) => {
+  const doLogin = async (currentPin: string) => {
     setError('')
     setLoading(true)
-    setTimeout(() => {
-      const result = login(email, currentPin)
-      setLoading(false)
-      if (result === 'ok') {
-        navigate('/')
-      } else if (result === 'wacht') {
-        setError('Je account wacht op activatie door een commandant of beheerder.')
-        setPin('')
-      } else {
-        setError('E-mailadres of pincode is onjuist.')
-        setPin('')
-      }
-    }, 300)
+    const result = await login(email, currentPin)
+    setLoading(false)
+    if (result === 'ok') {
+      navigate('/')
+    } else if (result === 'wacht') {
+      setError('Je account wacht op activatie door een commandant of beheerder.')
+      setPin('')
+    } else {
+      setError('E-mailadres of pincode is onjuist.')
+      setPin('')
+    }
   }
 
   useEffect(() => {

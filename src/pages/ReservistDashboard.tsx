@@ -10,19 +10,17 @@ const CATEGORIE_KLEUREN: Record<string, string> = {
 }
 
 export function ReservistDashboard() {
-  const { currentUser, users, toggleTask, markeerTaakGezien, setOpmerking, taken } = useAuth()
+  const { currentUser, toggleTask, markeerTaakGezien, setOpmerking, taken } = useAuth()
   const [openTask, setOpenTask] = useState<string | null>(null)
 
   if (!currentUser) return null
 
-  const freshTaken = users.find(u => u.id === currentUser.id)?.taken ?? currentUser.taken
-
-  const voltooid = freshTaken.filter(t => t.voltooid).length
+  const voltooid = currentUser.taken.filter(t => t.voltooid).length
   const totaal = taken.length
   const pct = totaal > 0 ? Math.round((voltooid / totaal) * 100) : 0
 
   const getStatus = (taskId: string) =>
-    freshTaken.find(t => t.taskId === taskId)
+    currentUser.taken.find(t => t.taskId === taskId)
 
   const isGeblokkeerd = (vereistTaakId?: string) =>
     !!vereistTaakId && !getStatus(vereistTaakId)?.voltooid
@@ -124,7 +122,7 @@ export function ReservistDashboard() {
                   <button
                     onClick={e => {
                       e.stopPropagation()
-                      if (!geblokkeerd) toggleTask(taak.id)
+                      if (!geblokkeerd) void toggleTask(taak.id)
                     }}
                     disabled={geblokkeerd}
                     className={`flex-shrink-0 transition-transform ${geblokkeerd ? 'cursor-not-allowed' : 'hover:scale-110'}`}
@@ -185,13 +183,13 @@ export function ReservistDashboard() {
                         rows={2}
                         placeholder="Voeg een persoonlijke opmerking toe…"
                         defaultValue={status?.opmerking ?? ''}
-                        onBlur={e => setOpmerking(taak.id, e.target.value)}
+                        onBlur={e => void setOpmerking(taak.id, e.target.value)}
                         className="w-full px-3 py-2 rounded-lg border border-army-200 bg-army-50 focus:outline-none focus:ring-2 focus:ring-army-500 focus:border-transparent text-sm resize-none"
                       />
                     </div>
                     {!geblokkeerd && (
                       <button
-                        onClick={() => toggleTask(taak.id)}
+                        onClick={() => void toggleTask(taak.id)}
                         className={`text-sm font-semibold px-4 py-2 rounded-lg transition-colors ${
                           voltooidItem
                             ? 'bg-gray-100 text-gray-600 hover:bg-gray-200'

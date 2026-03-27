@@ -8,7 +8,11 @@
       "Read(//tmp/**)",
       "Bash(npm run:*)",
       "Bash(git add:*)",
-      "Bash(git commit:*)"
+      "Bash(git commit:*)",
+      "Bash(git push:*)",
+      "Bash(ls /mnt/c/Users/mctmm/source/repos/acie-onboarding/.env*)",
+      "Bash(npx prisma:*)",
+      "Bash(node:*)"
     ]
   }
 }
