@@ -38,7 +38,10 @@ const CONTACTEN_KEY = 'acie_contacten_v1'
 function loadUsers(): User[] {
   try {
     const raw = localStorage.getItem(STORAGE_KEY)
-    return raw ? JSON.parse(raw) : DEMO_USERS
+    if (!raw) return DEMO_USERS
+    const parsed: User[] = JSON.parse(raw)
+    // Migratie: bestaande gebruikers zonder 'actief' veld krijgen actief: true
+    return parsed.map(u => u.actief === undefined ? { ...u, actief: true } : u)
   } catch {
     return DEMO_USERS
   }
