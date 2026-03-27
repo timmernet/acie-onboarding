@@ -47,6 +47,7 @@ export function UserBeheerPanel() {
   const [bewerkId, setBewerkId] = useState<string | null>(null)
   const [bewerkForm, setBewerkForm] = useState<GebruikerForm>(leegFormulier())
   const [bewerkError, setBewerkError] = useState('')
+  const [resetBevestig, setResetBevestig] = useState<string | null>(null)
   const [resetVerstuurd, setResetVerstuurd] = useState<string | null>(null)
 
   const [verwijderId, setVerwijderId] = useState<string | null>(null)
@@ -256,13 +257,32 @@ export function UserBeheerPanel() {
                   <button onClick={() => openBewerk(u)} className="p-1.5 rounded-lg text-army-400 hover:text-army-800 hover:bg-army-50 transition-colors" title="Bewerken">
                     <Pencil size={14} />
                   </button>
-                  <button
-                    onClick={() => stuurPinReset(u)}
-                    className={`p-1.5 rounded-lg transition-colors ${resetVerstuurd === u.id ? 'text-green-600 bg-green-50' : 'text-army-400 hover:text-army-800 hover:bg-army-50'}`}
-                    title="PIN-reset e-mail sturen"
-                  >
-                    <KeyRound size={14} />
-                  </button>
+                  {resetBevestig === u.id ? (
+                    <div className="flex items-center gap-1">
+                      <button
+                        onClick={() => { stuurPinReset(u); setResetBevestig(null) }}
+                        className="p-1.5 rounded-lg bg-amber-500 text-white hover:bg-amber-600 transition-colors"
+                        title="Bevestig reset"
+                      >
+                        <Check size={14} />
+                      </button>
+                      <button
+                        onClick={() => setResetBevestig(null)}
+                        className="p-1.5 rounded-lg text-army-400 hover:bg-army-50 transition-colors"
+                        title="Annuleer"
+                      >
+                        <X size={14} />
+                      </button>
+                    </div>
+                  ) : (
+                    <button
+                      onClick={() => setResetBevestig(u.id)}
+                      className={`p-1.5 rounded-lg transition-colors ${resetVerstuurd === u.id ? 'text-green-600 bg-green-50' : 'text-army-400 hover:text-army-800 hover:bg-army-50'}`}
+                      title="PIN-reset e-mail sturen"
+                    >
+                      <KeyRound size={14} />
+                    </button>
+                  )}
                   <button
                     onClick={() => u.actief ? deactiveerUser(u.id) : activeerUser(u.id)}
                     className="p-1.5 rounded-lg text-army-400 hover:text-army-800 hover:bg-army-50 transition-colors"
