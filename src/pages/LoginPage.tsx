@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { PinInput } from '../components/PinInput'
@@ -12,16 +12,11 @@ export function LoginPage() {
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
+  const doLogin = (currentPin: string) => {
     setError('')
-    if (pin.length < 4) {
-      setError('Voer een 4-cijferige pincode in.')
-      return
-    }
     setLoading(true)
     setTimeout(() => {
-      const ok = login(email, pin)
+      const ok = login(email, currentPin)
       setLoading(false)
       if (ok) {
         navigate('/')
@@ -30,6 +25,21 @@ export function LoginPage() {
         setPin('')
       }
     }, 300)
+  }
+
+  useEffect(() => {
+    if (pin.length === 4 && email.trim()) {
+      doLogin(pin)
+    }
+  }, [pin]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault()
+    if (pin.length < 4) {
+      setError('Voer een 4-cijferige pincode in.')
+      return
+    }
+    doLogin(pin)
   }
 
   return (
