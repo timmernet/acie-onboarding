@@ -5,7 +5,8 @@ import { PinInput } from '../components/PinInput'
 import { AlertCircle } from 'lucide-react'
 
 export function LoginPage() {
-  const { login } = useAuth()
+  const { login, appConfig } = useAuth()
+  const logo = appConfig?.logoUrl || '/Embleem_13_Lichte_Brigade.png'
   const navigate = useNavigate()
   const [email, setEmail] = useState('')
   const [pin, setPin] = useState('')
@@ -47,10 +48,10 @@ export function LoginPage() {
     <div className="min-h-screen bg-army-800 flex flex-col">
       {/* Hero header */}
       <div className="flex flex-col items-center justify-center pt-16 pb-10 px-4 text-center">
-        <img src="/Embleem_13_Lichte_Brigade.png" alt="13 Lichte Brigade" className="h-24 w-auto mb-5 drop-shadow-lg" />
-        <h1 className="text-white text-3xl font-extrabold tracking-tight">A-Compagnie</h1>
-        <p className="text-army-300 text-sm mt-1">30e Infanteriebataljon · 13 Lichte Brigade</p>
-        <p className="text-army-400 text-xs mt-3">Reservisten Onboarding Portaal</p>
+        <img src={logo} alt="Logo" className="h-24 w-auto mb-5 drop-shadow-lg" />
+        <h1 className="text-white text-3xl font-extrabold tracking-tight">{appConfig?.eenheidNaam || 'A-Compagnie'}</h1>
+        <p className="text-army-300 text-sm mt-1">{appConfig?.eenheidSubtitel || '30e Infanteriebataljon · 13 Lichte Brigade'}</p>
+        <p className="text-army-400 text-xs mt-3">{appConfig?.appNaam || 'Reservisten Onboarding Portaal'}</p>
       </div>
 
       {/* Card */}

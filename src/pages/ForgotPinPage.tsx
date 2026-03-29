@@ -1,8 +1,11 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { ChevronLeft, Mail, CheckCircle2 } from 'lucide-react'
+import { useAuth } from '../context/AuthContext'
 
 export function ForgotPinPage() {
+  const { appConfig } = useAuth()
+  const logo = appConfig?.logoUrl || '/Embleem_13_Lichte_Brigade.png'
   const [email, setEmail] = useState('')
   const [sent, setSent] = useState(false)
   const [loading, setLoading] = useState(false)
@@ -26,9 +29,9 @@ export function ForgotPinPage() {
   return (
     <div className="min-h-screen bg-army-800 flex flex-col">
       <div className="flex flex-col items-center justify-center pt-12 pb-8 px-4 text-center">
-        <img src="/Embleem_13_Lichte_Brigade.png" alt="13 Lichte Brigade" className="h-20 w-auto mb-4 drop-shadow-lg" />
+        <img src={logo} alt="Logo" className="h-20 w-auto mb-4 drop-shadow-lg" />
         <h1 className="text-white text-2xl font-extrabold">Pincode vergeten</h1>
-        <p className="text-army-300 text-sm mt-1">30IBB · 13 Lichte Brigade</p>
+        <p className="text-army-300 text-sm mt-1">{appConfig?.eenheidSubtitel || '30IBB · 13 Lichte Brigade'}</p>
       </div>
 
       <div className="flex-1 flex items-start justify-center px-4">

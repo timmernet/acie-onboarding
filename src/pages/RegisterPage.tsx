@@ -6,7 +6,8 @@ import { AlertCircle, CheckCircle2, ChevronLeft, Clock } from 'lucide-react'
 import { PELOTONEN } from '../data/dummyData'
 
 export function RegisterPage() {
-  const { register } = useAuth()
+  const { register, appConfig } = useAuth()
+  const logo = appConfig?.logoUrl || '/Embleem_13_Lichte_Brigade.png'
   const [naam, setNaam] = useState('')
   const [email, setEmail] = useState('')
   const [pelotoon, setPelotoon] = useState('')
@@ -59,9 +60,9 @@ export function RegisterPage() {
   return (
     <div className="min-h-screen bg-army-800 flex flex-col">
       <div className="flex flex-col items-center justify-center pt-12 pb-8 px-4 text-center">
-        <img src="/Embleem_13_Lichte_Brigade.png" alt="13 Lichte Brigade" className="h-20 w-auto mb-4 drop-shadow-lg" />
+        <img src={logo} alt="Logo" className="h-20 w-auto mb-4 drop-shadow-lg" />
         <h1 className="text-white text-2xl font-extrabold">Account aanmaken</h1>
-        <p className="text-army-300 text-sm mt-1">30IBB · 13 Lichte Brigade</p>
+        <p className="text-army-300 text-sm mt-1">{appConfig?.eenheidSubtitel || '30IBB · 13 Lichte Brigade'}</p>
       </div>
 
       <div className="flex-1 flex items-start justify-center px-4">

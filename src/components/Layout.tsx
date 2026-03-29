@@ -7,7 +7,10 @@ interface Props {
 }
 
 export function Layout({ children }: Props) {
-  const { currentUser, logout, users } = useAuth()
+  const { currentUser, logout, users, appConfig } = useAuth()
+  const logo = appConfig?.logoUrl || '/Embleem_13_Lichte_Brigade.png'
+  const naamRegel1 = appConfig?.eenheidNaam || 'A-Compagnie'
+  const naamRegel2 = appConfig?.eenheidSubtitel || '30IBB · 13 Lichte Brigade'
   const navigate = useNavigate()
   const location = useLocation()
 
@@ -66,10 +69,10 @@ export function Layout({ children }: Props) {
         <div className="max-w-5xl mx-auto px-4 h-16 flex items-center justify-between">
           {/* Logo / title */}
           <div className="flex items-center gap-3">
-            <img src="/Embleem_13_Lichte_Brigade.png" alt="13 Lichte Brigade" className="h-9 w-auto flex-shrink-0" />
+            <img src={logo} alt="Logo" className="h-9 w-auto flex-shrink-0" />
             <div className="leading-tight">
-              <div className="font-bold text-sm">A-Compagnie</div>
-              <div className="text-army-300 text-xs">30IBB · 13 Lichte Brigade</div>
+              <div className="font-bold text-sm">{naamRegel1}</div>
+              <div className="text-army-300 text-xs">{naamRegel2}</div>
             </div>
           </div>
 
