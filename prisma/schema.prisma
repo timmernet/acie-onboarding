@@ -75,3 +75,19 @@ model PinResetToken {
   expires BigInt
   used    Boolean @default(false)
 }
+
+model AppConfig {
+  id              Int     @id @default(1)
+  appNaam         String  @default("Reservisten Onboarding")
+  eenheidNaam     String  @default("A-Compagnie · 30e Infanteriebataljon")
+  eenheidSubtitel String  @default("13 Lichte Brigade — Reservisten Onboarding")
+  logoUrl         String  @default("")
+  primairKleur    String  @default("#3f7a22")
+  emailHost       String  @default("")
+  emailPort       Int     @default(587)
+  emailSecure     Boolean @default(false)
+  emailUser       String  @default("")
+  emailPass       String  @default("")
+  emailFrom       String  @default("")
+  emailAdmin      String  @default("")
+}

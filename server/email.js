@@ -1,24 +1,27 @@
 import nodemailer from 'nodemailer'
+import { prisma } from './prisma.js'
 
-export const emailGeconfigureerd = !!process.env.EMAIL_HOST
+async function getMailConfig() {
+  let cfg = null
+  try {
+    cfg = await prisma.appConfig.findFirst({ where: { id: 1 } })
+  } catch { /* DB not yet ready */ }
 
-const transporterConfig = {
-  host: process.env.EMAIL_HOST,
-  port: Number(process.env.EMAIL_PORT) || 587,
-  secure: process.env.EMAIL_SECURE === 'true',
-  tls: { rejectUnauthorized: false },
+  return {
+    host: cfg?.emailHost || process.env.EMAIL_HOST || '',
+    port: cfg?.emailPort || Number(process.env.EMAIL_PORT) || 587,
+    secure: cfg?.emailHost ? cfg.emailSecure : process.env.EMAIL_SECURE === 'true',
+    user: cfg?.emailUser || process.env.EMAIL_USER || '',
+    pass: cfg?.emailPass || process.env.EMAIL_PASS || '',
+    from: cfg?.emailFrom || process.env.EMAIL_FROM || '',
+    admin: cfg?.emailAdmin || process.env.EMAIL_ADMIN || '',
+    appNaam: cfg?.appNaam || 'Reservisten Onboarding',
+    eenheidNaam: cfg?.eenheidNaam || 'A-Compagnie · 30e Infanteriebataljon',
+    eenheidSubtitel: cfg?.eenheidSubtitel || '13 Lichte Brigade — Reservisten Onboarding',
+  }
 }
-if (process.env.EMAIL_USER && process.env.EMAIL_PASS) {
-  transporterConfig.auth = { user: process.env.EMAIL_USER, pass: process.env.EMAIL_PASS }
-}
 
-const transporter = emailGeconfigureerd ? nodemailer.createTransport(transporterConfig) : null
-
-if (!emailGeconfigureerd) {
-  console.warn('⚠️  Email niet geconfigureerd. Stel EMAIL_HOST in via .env')
-}
-
-function emailTemplate(titel, inhoud) {
+function emailTemplate(titel, inhoud, appNaam, eenheidNaam, eenheidSubtitel) {
   return `
   <!DOCTYPE html>
   <html lang="nl">
@@ -35,8 +38,8 @@ function emailTemplate(titel, inhoud) {
   <body>
     <div class="card">
       <div class="header">
-        <h1>A-Compagnie · 30e Infanteriebataljon</h1>
-        <p>13 Lichte Brigade — Reservisten Onboarding</p>
+        <h1>${eenheidNaam}</h1>
+        <p>${eenheidSubtitel}</p>
       </div>
       <div class="body">
         <h2>${titel}</h2>
@@ -48,61 +51,78 @@ function emailTemplate(titel, inhoud) {
   </html>`
 }
 
-const TEMPLATES = {
-  registratie: ({ naam }) => ({
-    onderwerp: 'Account aangevraagd — wacht op activatie',
-    html: emailTemplate('Account aangevraagd', `
-      <p>Beste ${naam},</p>
-      <p>Je account voor het Reservisten Onboarding Portaal is aangemaakt en wacht op activatie door een commandant of beheerder.</p>
-      <p>Je ontvangt een bevestigingsmail zodra je account is goedgekeurd.</p>
-    `),
-  }),
-  registratie_admin: ({ naam, email, pelotoon }) => ({
-    onderwerp: `Nieuw account aangevraagd — ${naam}`,
-    html: emailTemplate('Nieuw account ter activatie', `
-      <p>Er heeft een nieuwe gebruiker een account aangevraagd:</p>
-      <ul>
-        <li><strong>Naam:</strong> ${naam}</li>
-        <li><strong>E-mail:</strong> ${email}</li>
-        <li><strong>Peloton:</strong> ${pelotoon}</li>
-      </ul>
-      <p>Log in op het portaal om het account te activeren of af te wijzen.</p>
-    `),
-  }),
-  activatie: ({ naam }) => ({
-    onderwerp: 'Je account is geactiveerd',
-    html: emailTemplate('Account geactiveerd', `
-      <p>Beste ${naam},</p>
-      <p>Goed nieuws — je account voor het Reservisten Onboarding Portaal is geactiveerd. Je kunt nu inloggen.</p>
-    `),
-  }),
-  'pin-reset': ({ naam, resetUrl }) => ({
-    onderwerp: 'Pincode opnieuw instellen',
-    html: emailTemplate('Pincode opnieuw instellen', `
-      <p>Beste ${naam},</p>
-      <p>Er is een verzoek gedaan om je pincode opnieuw in te stellen. Klik op de knop hieronder om een nieuwe pincode te kiezen:</p>
-      <p style="text-align:center;margin:24px 0">
-        <a href="${resetUrl}" style="background:#1e4010;color:white;padding:12px 28px;border-radius:8px;text-decoration:none;font-weight:bold;font-size:14px">
-          Nieuwe pincode instellen
-        </a>
-      </p>
-      <p style="font-size:12px;color:#999">Of kopieer deze link: <a href="${resetUrl}">${resetUrl}</a></p>
-      <p style="font-size:12px;color:#999">Deze link is 1 uur geldig. Als je dit verzoek niet hebt gedaan, kun je deze e-mail negeren.</p>
-    `),
-  }),
+function buildTemplates(appNaam, eenheidNaam, eenheidSubtitel) {
+  const tpl = (titel, inhoud) => emailTemplate(titel, inhoud, appNaam, eenheidNaam, eenheidSubtitel)
+  return {
+    registratie: ({ naam }) => ({
+      onderwerp: 'Account aangevraagd — wacht op activatie',
+      html: tpl('Account aangevraagd', `
+        <p>Beste ${naam},</p>
+        <p>Je account voor het ${appNaam} is aangemaakt en wacht op activatie door een commandant of beheerder.</p>
+        <p>Je ontvangt een bevestigingsmail zodra je account is goedgekeurd.</p>
+      `),
+    }),
+    registratie_admin: ({ naam, email, pelotoon }) => ({
+      onderwerp: `Nieuw account aangevraagd — ${naam}`,
+      html: tpl('Nieuw account ter activatie', `
+        <p>Er heeft een nieuwe gebruiker een account aangevraagd:</p>
+        <ul>
+          <li><strong>Naam:</strong> ${naam}</li>
+          <li><strong>E-mail:</strong> ${email}</li>
+          <li><strong>Peloton:</strong> ${pelotoon}</li>
+        </ul>
+        <p>Log in op het portaal om het account te activeren of af te wijzen.</p>
+      `),
+    }),
+    activatie: ({ naam }) => ({
+      onderwerp: 'Je account is geactiveerd',
+      html: tpl('Account geactiveerd', `
+        <p>Beste ${naam},</p>
+        <p>Goed nieuws — je account voor het ${appNaam} is geactiveerd. Je kunt nu inloggen.</p>
+      `),
+    }),
+    'pin-reset': ({ naam, resetUrl }) => ({
+      onderwerp: 'Pincode opnieuw instellen',
+      html: tpl('Pincode opnieuw instellen', `
+        <p>Beste ${naam},</p>
+        <p>Er is een verzoek gedaan om je pincode opnieuw in te stellen. Klik op de knop hieronder om een nieuwe pincode te kiezen:</p>
+        <p style="text-align:center;margin:24px 0">
+          <a href="${resetUrl}" style="background:#1e4010;color:white;padding:12px 28px;border-radius:8px;text-decoration:none;font-weight:bold;font-size:14px">
+            Nieuwe pincode instellen
+          </a>
+        </p>
+        <p style="font-size:12px;color:#999">Of kopieer deze link: <a href="${resetUrl}">${resetUrl}</a></p>
+        <p style="font-size:12px;color:#999">Deze link is 1 uur geldig. Als je dit verzoek niet hebt gedaan, kun je deze e-mail negeren.</p>
+      `),
+    }),
+  }
 }
 
 export async function verstuurEmail(type, naar, data = {}) {
-  if (!emailGeconfigureerd) {
+  const cfg = await getMailConfig()
+
+  if (!cfg.host) {
     console.log(`[Email gesimuleerd] type=${type} naar=${naar}`)
     return
   }
-  const template = TEMPLATES[type]
+
+  const templates = buildTemplates(cfg.appNaam, cfg.eenheidNaam, cfg.eenheidSubtitel)
+  const template = templates[type]
   if (!template) return
   const { onderwerp, html } = template({ ...data, naar })
+
+  const transportConfig = {
+    host: cfg.host,
+    port: cfg.port,
+    secure: cfg.secure,
+    tls: { rejectUnauthorized: false },
+  }
+  if (cfg.user && cfg.pass) transportConfig.auth = { user: cfg.user, pass: cfg.pass }
+
   try {
+    const transporter = nodemailer.createTransport(transportConfig)
     await transporter.sendMail({
-      from: process.env.EMAIL_FROM || process.env.EMAIL_USER,
+      from: cfg.from || cfg.user,
       to: naar,
       subject: onderwerp,
       html,

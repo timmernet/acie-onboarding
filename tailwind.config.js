@@ -5,16 +5,16 @@ export default {
     extend: {
       colors: {
         army: {
-          50:  '#eef5e8',
-          100: '#d4e8c2',
-          200: '#aed198',
-          300: '#82b469',
-          400: '#5e9840',
-          500: '#3f7a22',
-          600: '#2d5c18',
-          700: '#1e4010',
-          800: '#14290a',
-          900: '#0a1505',
+          50:  'rgb(var(--army-50) / <alpha-value>)',
+          100: 'rgb(var(--army-100) / <alpha-value>)',
+          200: 'rgb(var(--army-200) / <alpha-value>)',
+          300: 'rgb(var(--army-300) / <alpha-value>)',
+          400: 'rgb(var(--army-400) / <alpha-value>)',
+          500: 'rgb(var(--army-500) / <alpha-value>)',
+          600: 'rgb(var(--army-600) / <alpha-value>)',
+          700: 'rgb(var(--army-700) / <alpha-value>)',
+          800: 'rgb(var(--army-800) / <alpha-value>)',
+          900: 'rgb(var(--army-900) / <alpha-value>)',
         },
         gold: {
           300: '#f0c96a',

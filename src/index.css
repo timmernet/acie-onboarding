@@ -2,6 +2,20 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Default army-green palette as RGB triplets (no # prefix, space-separated) */
+:root {
+  --army-50:  238 245 232;
+  --army-100: 212 232 194;
+  --army-200: 174 209 152;
+  --army-300: 130 180 105;
+  --army-400: 94 152 64;
+  --army-500: 63 122 34;
+  --army-600: 45 92 24;
+  --army-700: 30 64 16;
+  --army-800: 20 41 10;
+  --army-900: 10 21 5;
+}
+
 @layer base {
   body {
     font-family: 'Inter', system-ui, sans-serif;
@@ -21,7 +35,7 @@
     background: transparent;
   }
   .scrollbar-thin::-webkit-scrollbar-thumb {
-    background: #82b469;
+    background: rgb(var(--army-300));
     border-radius: 2px;
   }
 }

@@ -23,7 +23,9 @@ function formatUser(user) {
 
 // GET /api/users — commandant + beheerder
 router.get('/', requireAuth, requireRol('commandant', 'beheerder'), async (req, res) => {
+  const where = req.user.rol === 'commandant' ? { rol: { not: 'beheerder' } } : {}
   const users = await prisma.user.findMany({
+    where,
     include: { taken: true },
     orderBy: { aangemeldOp: 'asc' },
   })

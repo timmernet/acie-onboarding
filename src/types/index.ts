@@ -51,3 +51,17 @@ export interface Contact {
   email: string
   tags: string[]
 }
+
+export interface AppConfig {
+  appNaam: string
+  eenheidNaam: string
+  eenheidSubtitel: string
+  logoUrl: string
+  primairKleur: string
+  emailHost: string
+  emailPort: number
+  emailSecure: boolean
+  emailUser: string
+  emailFrom: string
+  emailAdmin: string
+}

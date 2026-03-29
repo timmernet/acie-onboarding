@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react'
-import type { User, UserRole, Taak, Contact, Bestand } from '../types'
+import type { User, UserRole, Taak, Contact, Bestand, AppConfig } from '../types'
+import { applyArmyTheme } from '../utils/applyTheme'
 
 interface AuthContextType {
   currentUser: User | null
@@ -7,7 +8,10 @@ interface AuthContextType {
   taken: Taak[]
   contacten: Contact[]
   bestanden: Bestand[]
+  appConfig: AppConfig | null
   loading: boolean
+  updateEmailConfig: (data: Partial<AppConfig> & { emailPass?: string }) => Promise<{ ok: boolean; error?: string }>
+  updateThemaConfig: (data: Partial<AppConfig>) => Promise<{ ok: boolean; error?: string }>
   login: (email: string, pin: string) => Promise<'ok' | 'fout' | 'wacht'>
   logout: () => Promise<void>
   register: (naam: string, email: string, pin: string, pelotoon: string) => Promise<{ ok: boolean; error?: string }>
@@ -55,6 +59,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [taken, setTaken] = useState<Taak[]>([])
   const [contacten, setContacten] = useState<Contact[]>([])
   const [bestanden, setBestanden] = useState<Bestand[]>([])
+  const [appConfig, setAppConfig] = useState<AppConfig | null>(null)
   const [loading, setLoading] = useState(true)
 
   const laadUsers = useCallback(async () => {
@@ -63,11 +68,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [])
 
   const laadAlles = useCallback(async () => {
-    const [meRes, takenRes, contactenRes, bestandenRes] = await Promise.all([
+    const [meRes, takenRes, contactenRes, bestandenRes, configRes] = await Promise.all([
       api<User>('/api/auth/me'),
       api<Taak[]>('/api/taken'),
       api<Contact[]>('/api/contacten'),
       api<Bestand[]>('/api/bestanden'),
+      api<AppConfig>('/api/config'),
     ])
 
     if (meRes.data) {
@@ -79,6 +85,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (takenRes.data) setTaken(takenRes.data)
     if (contactenRes.data) setContacten(contactenRes.data)
     if (bestandenRes.data) setBestanden(bestandenRes.data)
+    if (configRes.data) {
+      setAppConfig(configRes.data)
+      if (configRes.data.primairKleur) applyArmyTheme(configRes.data.primairKleur)
+    }
   }, [laadUsers])
 
   useEffect(() => {
@@ -297,6 +307,33 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setContacten(prev => prev.filter(c => c.id !== id))
   }
 
+  // --- App configuratie ---
+
+  const updateEmailConfig = async (data: Partial<AppConfig> & { emailPass?: string }): Promise<{ ok: boolean; error?: string }> => {
+    const { error, data: result } = await api<AppConfig>('/api/config/email', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    })
+    if (error) return { ok: false, error }
+    if (result) setAppConfig(result)
+    return { ok: true }
+  }
+
+  const updateThemaConfig = async (data: Partial<AppConfig>): Promise<{ ok: boolean; error?: string }> => {
+    const { error, data: result } = await api<AppConfig>('/api/config/thema', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    })
+    if (error) return { ok: false, error }
+    if (result) {
+      setAppConfig(result)
+      if (result.primairKleur) applyArmyTheme(result.primairKleur)
+    }
+    return { ok: true }
+  }
+
   // --- Bestanden ---
 
   const uploadBestand = async (file: File, naam: string, beschrijving: string, categorie: string): Promise<void> => {
@@ -321,13 +358,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   return (
     <AuthContext.Provider value={{
-      currentUser, users, taken, contacten, bestanden, loading,
+      currentUser, users, taken, contacten, bestanden, appConfig, loading,
       login, logout, register,
       activeerUser, deactiveerUser, afwijsUser, addUserDirect, updateUser, deleteUser, updateUserRole,
       toggleTask, markeerTaakGezien, setOpmerking,
       moveTaakOmhoog, moveTaakOmlaag, addTaak, updateTaak, deleteTaak,
       addContact, updateContact, deleteContact,
       uploadBestand, deleteBestand,
+      updateEmailConfig, updateThemaConfig,
     }}>
       {children}
     </AuthContext.Provider>

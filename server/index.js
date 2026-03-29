@@ -11,6 +11,7 @@ import usersRouter from './routes/users.js'
 import takenRouter from './routes/taken.js'
 import contactenRouter from './routes/contacten.js'
 import bestandenRouter from './routes/bestanden.js'
+import configRouter from './routes/config.js'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const app = express()
@@ -36,6 +37,7 @@ app.use('/api/users', usersRouter)
 app.use('/api/taken', takenRouter)
 app.use('/api/contacten', contactenRouter)
 app.use('/api/bestanden', bestandenRouter)
+app.use('/api/config', configRouter)
 
 // In productie: serveer de Vite build
 if (process.env.NODE_ENV === 'production') {
