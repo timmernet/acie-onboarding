@@ -5,6 +5,8 @@ import { join, dirname } from 'path'
 import { fileURLToPath } from 'url'
 import { prisma } from '../prisma.js'
 import { requireAuth, requireRol } from '../middleware/auth.js'
+import { logAuditEvent, actor } from '../audit.js'
+import { valideerDocument } from '../fileValidation.js'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const UPLOADS_DIR = join(__dirname, '..', 'uploads')
@@ -27,6 +29,12 @@ router.post('/', requireAuth, requireRol('commandant', 'beheerder'), upload.sing
   const file = req.file
   if (!file) return res.status(400).json({ error: 'Geen bestand meegegeven' })
 
+  try {
+    valideerDocument(file.buffer, file.originalname)
+  } catch (err) {
+    return res.status(400).json({ error: err.message })
+  }
+
   const safeName = file.originalname.replace(/[^a-zA-Z0-9._-]/g, '_')
   const filename = `${Date.now()}_${safeName}`
 
@@ -45,6 +53,7 @@ router.post('/', requireAuth, requireRol('commandant', 'beheerder'), upload.sing
       url: `/uploads/${filename}`,
     },
   })
+  logAuditEvent({ ...actor(req), actie: 'BESTAND_GEUPLOAD', entiteit: 'Bestand', entiteitId: bestand.id, details: { naam: bestand.naam, grootte: bestand.grootte } })
   res.json(bestand)
 })
 
@@ -58,6 +67,7 @@ router.delete('/:id', requireAuth, requireRol('commandant', 'beheerder'), async 
   if (existsSync(filepath)) unlinkSync(filepath)
 
   await prisma.bestand.delete({ where: { id: req.params.id } })
+  logAuditEvent({ ...actor(req), actie: 'BESTAND_VERWIJDERD', entiteit: 'Bestand', entiteitId: req.params.id, details: { naam: bestand.naam } })
   res.json({ ok: true })
 })
 

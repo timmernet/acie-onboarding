@@ -6,18 +6,19 @@ import { UserBeheerPanel } from '../components/UserBeheerPanel'
 type Tab = 'voortgang' | 'gebruikers'
 
 export function CommanderDashboard() {
-  const { users, taken } = useAuth()
+  const { users, taken, appConfig } = useAuth()
+  const naamReservist = appConfig?.naamReservist || 'Gebruiker'
   const [tab, setTab] = useState<Tab>('voortgang')
   const [openUser, setOpenUser] = useState<string | null>(null)
   const [filterPelotoon, setFilterPelotoon] = useState('Alle')
 
   const reservisten = users.filter(u => u.rol === 'reservist' && u.actief)
 
-  const pelotonen = ['Alle', ...Array.from(new Set(reservisten.map(u => u.pelotoon))).sort()]
+  const pelotonen = ['Alle', ...Array.from(new Set(reservisten.map(u => u.pelotoonNaam))).sort()]
 
   const gefilterd = filterPelotoon === 'Alle'
     ? reservisten
-    : reservisten.filter(u => u.pelotoon === filterPelotoon)
+    : reservisten.filter(u => u.pelotoonNaam === filterPelotoon)
 
   const pct = (user: typeof reservisten[0]) => {
     const v = user.taken.filter(t => t.voltooid).length
@@ -59,7 +60,7 @@ export function CommanderDashboard() {
       <div className="grid grid-cols-3 gap-3">
         <div className="bg-army-800 text-white rounded-xl p-4 text-center">
           <div className="text-2xl font-extrabold text-gold-400">{gefilterd.length}</div>
-          <div className="text-army-300 text-xs mt-1">Reservisten</div>
+          <div className="text-army-300 text-xs mt-1">{naamReservist}s</div>
         </div>
         <div className="bg-army-800 text-white rounded-xl p-4 text-center">
           <div className="text-2xl font-extrabold text-gold-400">{gemiddeld}%</div>
@@ -92,12 +93,12 @@ export function CommanderDashboard() {
       <div>
         <h2 className="text-army-900 font-bold text-lg mb-3 flex items-center gap-2">
           <Users size={18} />
-          Voortgang per reservist
+          Voortgang per {naamReservist.toLowerCase()}
         </h2>
         <div className="space-y-2">
           {gefilterd.length === 0 && (
             <div className="text-center py-10 text-army-400 text-sm bg-white rounded-xl border border-army-100">
-              Geen reservisten gevonden.
+              Geen {naamReservist.toLowerCase()}s gevonden.
             </div>
           )}
           {gefilterd.map(user => {
@@ -124,7 +125,7 @@ export function CommanderDashboard() {
                   <div className="flex-1 min-w-0">
                     <div className="font-semibold text-army-900 text-sm">{user.naam}</div>
                     <div className="text-army-500 text-xs">
-                      {user.pelotoon}
+                      {user.pelotoonNaam}{user.groepNaam ? ` · ${user.groepNaam}` : ''}
                       {user.laatstIngelogd && (
                         <span className="ml-2 text-army-400">
                           · ingelogd {new Date(user.laatstIngelogd).toLocaleString('nl-NL', { dateStyle: 'short', timeStyle: 'short' })}

@@ -1,14 +1,16 @@
 import { useState } from 'react'
 import { useAuth } from '../context/AuthContext'
 import type { Taak, Contact } from '../types'
-import { Shield, Users, Plus, Pencil, Trash2, X, ClipboardList, BookOpen, ChevronUp, ChevronDown, Mail, Palette } from 'lucide-react'
+import { Shield, Users, Plus, Pencil, Trash2, X, ClipboardList, BookOpen, ChevronUp, ChevronDown, Mail, Palette, Layers } from 'lucide-react'
 import { UserBeheerPanel } from '../components/UserBeheerPanel'
 import { EmailConfigPanel } from '../components/EmailConfigPanel'
 import { ThemaPanel } from '../components/ThemaPanel'
+import { EenhedenPanel } from '../components/EenhedenPanel'
+import AuditLogPanel from '../components/AuditLogPanel'
 
 const INPUT = 'w-full px-3 py-2 rounded-lg border border-army-200 bg-white focus:outline-none focus:ring-2 focus:ring-army-500 focus:border-transparent text-sm'
 
-type Tab = 'Gebruikers' | 'Taken' | 'Contacten' | 'E-mail' | 'Thema'
+type Tab = 'Gebruikers' | 'Eenheden' | 'Taken' | 'Contacten' | 'E-mail' | 'Thema' | 'Auditlog'
 
 const leegeTaak = (): Omit<Taak, 'id'> => ({ titel: '', beschrijving: '', categorie: '', contactId: '', vereistTaakId: undefined })
 const leegeContact = (): Omit<Contact, 'id'> => ({ naam: '', rang: '', functie: '', telefoon: '', email: '', tags: [] })
@@ -90,10 +92,12 @@ export function AdminDashboard() {
 
   const alleTabs: { key: Tab; label: string; icon: React.ReactNode; beheerderOnly?: boolean }[] = [
     { key: 'Gebruikers', label: 'Gebruikers', icon: <Users size={15} /> },
+    { key: 'Eenheden', label: 'Eenheden', icon: <Layers size={15} /> },
     { key: 'Taken', label: 'Taken', icon: <ClipboardList size={15} /> },
     { key: 'Contacten', label: 'Contacten', icon: <BookOpen size={15} /> },
     { key: 'E-mail', label: 'E-mail', icon: <Mail size={15} />, beheerderOnly: true },
     { key: 'Thema', label: 'Thema', icon: <Palette size={15} />, beheerderOnly: true },
+    { key: 'Auditlog', label: 'Auditlog', icon: <Shield size={15} />, beheerderOnly: true },
   ]
   const tabs = alleTabs.filter(t => !t.beheerderOnly || isBeheerder)
 
@@ -129,6 +133,9 @@ export function AdminDashboard() {
 
       {/* === GEBRUIKERS TAB === */}
       {actieveTab === 'Gebruikers' && <UserBeheerPanel />}
+
+      {/* === EENHEDEN TAB === */}
+      {actieveTab === 'Eenheden' && <EenhedenPanel />}
 
       {/* === TAKEN TAB === */}
       {actieveTab === 'Taken' && (
@@ -259,6 +266,9 @@ export function AdminDashboard() {
 
       {/* === THEMA TAB === */}
       {actieveTab === 'Thema' && <ThemaPanel />}
+
+      {/* === AUDITLOG TAB === */}
+      {actieveTab === 'Auditlog' && <AuditLogPanel />}
 
       {/* === CONTACTEN TAB === */}
       {actieveTab === 'Contacten' && (

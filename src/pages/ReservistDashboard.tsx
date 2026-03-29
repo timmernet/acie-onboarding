@@ -46,7 +46,7 @@ export function ReservistDashboard() {
           </div>
           <div>
             <div className="font-bold">{currentUser.naam}</div>
-            <div className="text-army-300 text-sm">{currentUser.pelotoon}</div>
+            <div className="text-army-300 text-sm">{currentUser.pelotoonNaam}{currentUser.groepNaam ? ` · ${currentUser.groepNaam}` : ''}</div>
           </div>
           <div className="ml-auto text-right">
             <div className="text-2xl font-extrabold text-gold-400">{pct}%</div>

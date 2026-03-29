@@ -12,7 +12,12 @@
       "Bash(git push:*)",
       "Bash(ls /mnt/c/Users/mctmm/source/repos/acie-onboarding/.env*)",
       "Bash(npx prisma:*)",
-      "Bash(node:*)"
+      "Bash(node:*)",
+      "Bash(git pull:*)",
+      "Bash(git stash:*)",
+      "Bash(npx tsc:*)",
+      "Bash(wait)",
+      "Bash(npm list:*)"
     ]
   }
 }

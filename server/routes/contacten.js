@@ -1,6 +1,7 @@
 import { Router } from 'express'
 import { prisma } from '../prisma.js'
 import { requireAuth, requireRol } from '../middleware/auth.js'
+import { validate } from '../validate.js'
 
 const router = Router()
 
@@ -14,8 +15,16 @@ router.get('/', requireAuth, async (req, res) => {
   res.json(contacten.map(formatContact))
 })
 
+const contactSchema = {
+  naam:    { required: true, maxLength: 100 },
+  email:   { email: true, maxLength: 255 },
+  telefoon:{ maxLength: 30 },
+  rang:    { maxLength: 50 },
+  functie: { maxLength: 100 },
+}
+
 // POST /api/contacten
-router.post('/', requireAuth, requireRol('commandant', 'beheerder'), async (req, res) => {
+router.post('/', requireAuth, requireRol('commandant', 'beheerder'), validate(contactSchema), async (req, res) => {
   const { naam, rang, functie, telefoon, email, tags } = req.body
   if (!naam) return res.status(400).json({ error: 'naam is verplicht' })
   const contact = await prisma.contact.create({
@@ -25,7 +34,7 @@ router.post('/', requireAuth, requireRol('commandant', 'beheerder'), async (req,
 })
 
 // PUT /api/contacten/:id
-router.put('/:id', requireAuth, requireRol('commandant', 'beheerder'), async (req, res) => {
+router.put('/:id', requireAuth, requireRol('commandant', 'beheerder'), validate(contactSchema), async (req, res) => {
   const { naam, rang, functie, telefoon, email, tags } = req.body
   if (!naam) return res.status(400).json({ error: 'naam is verplicht' })
   const contact = await prisma.contact.update({

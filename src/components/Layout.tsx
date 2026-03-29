@@ -27,9 +27,10 @@ export function Layout({ children }: Props) {
     navigate('/login')
   }
 
-  const rolLabel = {
-    reservist: 'Reservist',
-    commandant: 'Commandant',
+  const rolLabel: Record<string, string> = {
+    reservist: appConfig?.naamReservist || 'Reservist',
+    groepscommandant: appConfig?.naamGroepscommandant || 'Groepscommandant',
+    commandant: appConfig?.naamCommandant || 'Pelotonscommandant',
     beheerder: 'Beheerder',
   }
 
@@ -82,7 +83,7 @@ export function Layout({ children }: Props) {
               <div className="hidden sm:flex flex-col items-end">
                 <span className="text-sm font-medium">{currentUser.naam}</span>
                 <span className="text-army-300 text-xs">
-                  {rolLabel[currentUser.rol]} · {currentUser.pelotoon}
+                  {rolLabel[currentUser.rol]} · {currentUser.pelotoonNaam}
                 </span>
               </div>
               <div className="w-8 h-8 rounded-full bg-army-600 flex items-center justify-center text-xs font-bold">

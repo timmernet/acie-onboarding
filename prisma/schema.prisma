@@ -7,17 +7,39 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+model Peloton {
+  id      String  @id @default(cuid())
+  naam    String  @unique
+  groepen Groep[]
+  users   User[]
+}
+
+model Groep {
+  id         String  @id @default(cuid())
+  naam       String
+  pelotoonId String
+  peloton    Peloton @relation(fields: [pelotoonId], references: [id], onDelete: Cascade)
+  users      User[]
+
+  @@unique([naam, pelotoonId])
+}
+
 model User {
   id             String     @id @default(cuid())
   naam           String
   email          String     @unique
   pin            String
   rol            String
-  pelotoon       String
+  pelotoonId     String
+  groepId        String?
   aangemeldOp    String
   actief         Boolean    @default(false)
   laatstIngelogd String?
+  loginPogingen  Int        @default(0)
+  geblokkerdTot  String?
   taken          UserTask[]
+  peloton        Peloton    @relation(fields: [pelotoonId], references: [id])
+  groep          Groep?     @relation(fields: [groepId], references: [id])
 }
 
 model Taak {
@@ -68,6 +90,19 @@ model Bestand {
   url          String
 }
 
+model AuditLog {
+  id          String  @id @default(cuid())
+  tijdstip    String
+  userId      String?
+  userNaam    String
+  userRol     String
+  actie       String
+  entiteit    String?
+  entiteitId  String?
+  details     String  @default("{}")
+  ipAdres     String?
+}
+
 model PinResetToken {
   token   String  @id
   email   String
@@ -77,17 +112,28 @@ model PinResetToken {
 }
 
 model AppConfig {
-  id              Int     @id @default(1)
-  appNaam         String  @default("Reservisten Onboarding")
-  eenheidNaam     String  @default("A-Compagnie · 30e Infanteriebataljon")
-  eenheidSubtitel String  @default("13 Lichte Brigade — Reservisten Onboarding")
-  logoUrl         String  @default("")
-  primairKleur    String  @default("#3f7a22")
-  emailHost       String  @default("")
-  emailPort       Int     @default(587)
-  emailSecure     Boolean @default(false)
-  emailUser       String  @default("")
-  emailPass       String  @default("")
-  emailFrom       String  @default("")
-  emailAdmin      String  @default("")
+  id                   Int     @id @default(1)
+  appNaam              String  @default("Reservisten Onboarding")
+  eenheidNaam          String  @default("A-Compagnie · 30e Infanteriebataljon")
+  eenheidSubtitel      String  @default("13 Lichte Brigade — Reservisten Onboarding")
+  logoUrl              String  @default("")
+  primairKleur         String  @default("#3f7a22")
+  emailHost            String  @default("")
+  emailPort            Int     @default(587)
+  emailSecure          Boolean @default(false)
+  emailUser            String  @default("")
+  emailPass            String  @default("")
+  emailFrom            String  @default("")
+  emailAdmin           String  @default("")
+  naamReservist        String  @default("Reservist")
+  naamGroepscommandant String  @default("Groepscommandant")
+  naamCommandant       String  @default("Pelotonscommandant")
+  naamPeloton          String  @default("Peloton")
+  naamGroep            String  @default("Groep")
+  browserTitel         String  @default("")
+  faviconUrl           String  @default("")
+  emailType            String  @default("smtp")
+  emailTenantId        String  @default("")
+  emailClientId        String  @default("")
+  emailClientSecret    String  @default("")
 }

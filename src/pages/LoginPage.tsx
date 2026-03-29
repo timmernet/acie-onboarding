@@ -16,15 +16,24 @@ export function LoginPage() {
   const doLogin = async (currentPin: string) => {
     setError('')
     setLoading(true)
-    const result = await login(email, currentPin)
+    const { result, pogingenOver, geblokkerdTot } = await login(email, currentPin)
     setLoading(false)
     if (result === 'ok') {
       navigate('/')
     } else if (result === 'wacht') {
       setError('Je account wacht op activatie door een commandant of beheerder.')
       setPin('')
+    } else if (result === 'geblokkeerd') {
+      const tijdStr = geblokkerdTot
+        ? new Date(geblokkerdTot).toLocaleTimeString('nl-NL', { hour: '2-digit', minute: '2-digit' })
+        : ''
+      setError(`Account tijdelijk geblokkeerd na te veel mislukte pogingen. Probeer het opnieuw om ${tijdStr}.`)
+      setPin('')
     } else {
-      setError('E-mailadres of pincode is onjuist.')
+      const extra = pogingenOver !== undefined && pogingenOver <= 2
+        ? ` Nog ${pogingenOver} poging${pogingenOver === 1 ? '' : 'en'} voor tijdelijke blokkering.`
+        : ''
+      setError(`E-mailadres of pincode is onjuist.${extra}`)
       setPin('')
     }
   }

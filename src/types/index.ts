@@ -1,4 +1,4 @@
-export type UserRole = 'reservist' | 'commandant' | 'beheerder'
+export type UserRole = 'reservist' | 'groepscommandant' | 'commandant' | 'beheerder'
 
 export interface UserTask {
   taskId: string
@@ -13,11 +13,26 @@ export interface User {
   naam: string
   email: string
   rol: UserRole
-  pelotoon: string
+  pelotoonId: string
+  pelotoonNaam: string
+  groepId: string | null
+  groepNaam: string | null
   aangemeldOp: string
   taken: UserTask[]
   actief: boolean
   laatstIngelogd?: string
+}
+
+export interface Peloton {
+  id: string
+  naam: string
+}
+
+export interface Groep {
+  id: string
+  naam: string
+  pelotoonId: string
+  pelotoonNaam?: string
 }
 
 export interface Taak {
@@ -64,4 +79,14 @@ export interface AppConfig {
   emailUser: string
   emailFrom: string
   emailAdmin: string
+  naamReservist: string
+  naamGroepscommandant: string
+  naamCommandant: string
+  naamPeloton: string
+  naamGroep: string
+  browserTitel: string
+  faviconUrl: string
+  emailType: string
+  emailTenantId: string
+  emailClientId: string
 }

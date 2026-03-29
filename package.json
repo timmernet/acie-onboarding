@@ -12,7 +12,11 @@
     "db:generate": "prisma generate",
     "db:push": "prisma db push",
     "db:migrate": "prisma migrate dev",
-    "db:seed": "node prisma/seed.js"
+    "db:seed": "node prisma/seed.js",
+    "start": "pm2 start ecosystem.config.cjs --env production",
+    "stop": "pm2 stop onboarding",
+    "restart": "pm2 restart onboarding",
+    "logs": "pm2 logs onboarding"
   },
   "prisma": {
     "seed": "node prisma/seed.js"
@@ -24,6 +28,8 @@
     "cors": "^2.8.6",
     "dotenv": "^17.3.1",
     "express": "^5.2.1",
+    "express-rate-limit": "^8.3.1",
+    "helmet": "^8.1.0",
     "jsonwebtoken": "^9.0.2",
     "lucide-react": "^0.344.0",
     "multer": "^2.1.1",

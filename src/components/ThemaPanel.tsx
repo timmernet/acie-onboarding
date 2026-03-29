@@ -13,9 +13,19 @@ export function ThemaPanel() {
   const [eenheidSubtitel, setEenheidSubtitel] = useState('')
   const [primairKleur, setPrimairKleur] = useState('#3f7a22')
   const [logoUrl, setLogoUrl] = useState('')
+  const [naamReservist, setNaamReservist] = useState('')
+  const [naamGroepscommandant, setNaamGroepscommandant] = useState('')
+  const [naamCommandant, setNaamCommandant] = useState('')
+  const [naamPeloton, setNaamPeloton] = useState('')
+  const [naamGroep, setNaamGroep] = useState('')
+  const [browserTitel, setBrowserTitel] = useState('')
+  const [faviconUrl, setFaviconUrl] = useState('')
   const [logoUploading, setLogoUploading] = useState(false)
   const [logoFout, setLogoFout] = useState('')
+  const [faviconUploading, setFaviconUploading] = useState(false)
+  const [faviconFout, setFaviconFout] = useState('')
   const fileRef = useRef<HTMLInputElement>(null)
+  const faviconRef = useRef<HTMLInputElement>(null)
 
   const [status, setStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle')
   const [foutmelding, setFoutmelding] = useState('')
@@ -27,6 +37,13 @@ export function ThemaPanel() {
       setEenheidSubtitel(appConfig.eenheidSubtitel || '')
       setPrimairKleur(appConfig.primairKleur || '#3f7a22')
       setLogoUrl(appConfig.logoUrl || '')
+      setNaamReservist(appConfig.naamReservist || '')
+      setNaamGroepscommandant(appConfig.naamGroepscommandant || '')
+      setNaamCommandant(appConfig.naamCommandant || '')
+      setNaamPeloton(appConfig.naamPeloton || '')
+      setNaamGroep(appConfig.naamGroep || '')
+      setBrowserTitel(appConfig.browserTitel || '')
+      setFaviconUrl(appConfig.faviconUrl || '')
     }
   }, [appConfig])
 
@@ -50,12 +67,8 @@ export function ThemaPanel() {
     setLogoUploading(true)
     const formData = new FormData()
     formData.append('file', file)
-    formData.append('naam', 'logo')
-    formData.append('beschrijving', 'App logo')
-    formData.append('categorie', 'logo')
-    formData.append('geuploadDoor', 'Beheerder')
     try {
-      const res = await fetch('/api/bestanden', {
+      const res = await fetch('/api/config/upload', {
         method: 'POST',
         body: formData,
         credentials: 'include',
@@ -71,6 +84,28 @@ export function ThemaPanel() {
     }
   }
 
+  const handleFaviconUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    if (!file.type.startsWith('image/')) { setFaviconFout('Alleen afbeeldingen toegestaan'); return }
+    if (file.size > 512 * 1024) { setFaviconFout('Bestand mag maximaal 512 KB zijn'); return }
+    setFaviconFout('')
+    setFaviconUploading(true)
+    const formData = new FormData()
+    formData.append('file', file)
+    try {
+      const res = await fetch('/api/config/upload', { method: 'POST', body: formData, credentials: 'include' })
+      if (!res.ok) throw new Error('Upload mislukt')
+      const data = await res.json()
+      setFaviconUrl(data.url)
+    } catch {
+      setFaviconFout('Upload mislukt. Probeer opnieuw.')
+    } finally {
+      setFaviconUploading(false)
+      if (faviconRef.current) faviconRef.current.value = ''
+    }
+  }
+
   const handleOpslaan = async () => {
     setStatus('saving')
     setFoutmelding('')
@@ -80,6 +115,13 @@ export function ThemaPanel() {
       eenheidSubtitel,
       primairKleur,
       logoUrl,
+      naamReservist,
+      naamGroepscommandant,
+      naamCommandant,
+      naamPeloton,
+      naamGroep,
+      browserTitel,
+      faviconUrl,
     })
     if (result.ok) {
       setStatus('saved')
@@ -130,6 +172,46 @@ export function ThemaPanel() {
             onChange={e => setEenheidSubtitel(e.target.value)}
             className={INPUT}
           />
+        </div>
+        <div>
+          <label className="block text-xs font-medium text-army-600 mb-1">Browsertitelbalk</label>
+          <input
+            type="text"
+            placeholder="Onboarding — A-Compagnie 30IBB"
+            value={browserTitel}
+            onChange={e => setBrowserTitel(e.target.value)}
+            className={INPUT}
+          />
+          <p className="text-xs text-army-400 mt-1">De tekst die zichtbaar is in het browsertabblad.</p>
+        </div>
+      </div>
+
+      <div className="bg-white rounded-xl border border-army-200 shadow-sm p-5 space-y-4">
+        <h3 className="font-semibold text-army-800 text-sm flex items-center gap-2">
+          <Palette size={15} /> Naamgeving rollen &amp; eenheden
+        </h3>
+        <p className="text-xs text-army-500">Pas de namen van rollen en organisatorische eenheden aan voor jouw organisatie.</p>
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <label className="block text-xs font-medium text-army-600 mb-1">Naam gebruiker-rol</label>
+            <input type="text" placeholder="Gebruiker" value={naamReservist} onChange={e => setNaamReservist(e.target.value)} className={INPUT} />
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-army-600 mb-1">Naam groepsleider-rol</label>
+            <input type="text" placeholder="Groepsleider" value={naamGroepscommandant} onChange={e => setNaamGroepscommandant(e.target.value)} className={INPUT} />
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-army-600 mb-1">Naam manager-rol</label>
+            <input type="text" placeholder="Manager" value={naamCommandant} onChange={e => setNaamCommandant(e.target.value)} className={INPUT} />
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-army-600 mb-1">Naam afdeling-eenheid</label>
+            <input type="text" placeholder="Afdeling" value={naamPeloton} onChange={e => setNaamPeloton(e.target.value)} className={INPUT} />
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-army-600 mb-1">Naam groep-eenheid</label>
+            <input type="text" placeholder="Groep" value={naamGroep} onChange={e => setNaamGroep(e.target.value)} className={INPUT} />
+          </div>
         </div>
       </div>
 
@@ -220,6 +302,41 @@ export function ThemaPanel() {
         {logoFout && (
           <p className="text-xs text-red-600 flex items-center gap-1">
             <AlertCircle size={12} /> {logoFout}
+          </p>
+        )}
+      </div>
+
+      <div className="bg-white rounded-xl border border-army-200 shadow-sm p-5 space-y-4">
+        <h3 className="font-semibold text-army-800 text-sm flex items-center gap-2">
+          <Upload size={15} /> Favicon (tabblad-icoon)
+        </h3>
+
+        {faviconUrl && (
+          <div className="flex items-center gap-3">
+            <img src={faviconUrl} alt="Favicon" className="h-8 w-8 object-contain rounded border border-army-100 p-0.5 bg-army-50" />
+            <button onClick={() => setFaviconUrl('')} className="flex items-center gap-1 text-xs text-red-500 hover:text-red-700">
+              <X size={12} /> Verwijderen
+            </button>
+          </div>
+        )}
+
+        <label className="block">
+          <span className="sr-only">Favicon uploaden</span>
+          <input ref={faviconRef} type="file" accept="image/*" onChange={handleFaviconUpload} className="hidden" />
+          <button
+            type="button"
+            onClick={() => faviconRef.current?.click()}
+            disabled={faviconUploading}
+            className="flex items-center gap-2 px-4 py-2 rounded-lg border-2 border-dashed border-army-300 text-army-600 hover:border-army-500 hover:text-army-800 text-sm font-medium transition-colors disabled:opacity-50"
+          >
+            {faviconUploading ? <Loader2 size={14} className="animate-spin" /> : <Upload size={14} />}
+            {faviconUploading ? 'Uploaden…' : faviconUrl ? 'Ander favicon kiezen' : 'Favicon uploaden'}
+          </button>
+        </label>
+        <p className="text-xs text-army-400">Aanbevolen: PNG of ICO, 32×32 px, maximaal 512 KB.</p>
+        {faviconFout && (
+          <p className="text-xs text-red-600 flex items-center gap-1">
+            <AlertCircle size={12} /> {faviconFout}
           </p>
         )}
       </div>

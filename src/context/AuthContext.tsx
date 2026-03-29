@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react'
-import type { User, UserRole, Taak, Contact, Bestand, AppConfig } from '../types'
+import type { User, UserRole, Taak, Contact, Bestand, AppConfig, Peloton, Groep } from '../types'
 import { applyArmyTheme } from '../utils/applyTheme'
 
 interface AuthContextType {
@@ -8,18 +8,26 @@ interface AuthContextType {
   taken: Taak[]
   contacten: Contact[]
   bestanden: Bestand[]
+  pelotonen: Peloton[]
+  groepen: Groep[]
   appConfig: AppConfig | null
   loading: boolean
-  updateEmailConfig: (data: Partial<AppConfig> & { emailPass?: string }) => Promise<{ ok: boolean; error?: string }>
+  updateEmailConfig: (data: Partial<AppConfig> & { emailPass?: string; emailClientSecret?: string }) => Promise<{ ok: boolean; error?: string }>
   updateThemaConfig: (data: Partial<AppConfig>) => Promise<{ ok: boolean; error?: string }>
-  login: (email: string, pin: string) => Promise<'ok' | 'fout' | 'wacht'>
+  addPeloton: (naam: string) => Promise<{ ok: boolean; error?: string }>
+  updatePeloton: (id: string, naam: string) => Promise<{ ok: boolean; error?: string }>
+  deletePeloton: (id: string) => Promise<{ ok: boolean; error?: string }>
+  addGroep: (naam: string, pelotoonId: string) => Promise<{ ok: boolean; error?: string }>
+  updateGroep: (id: string, naam: string) => Promise<{ ok: boolean; error?: string }>
+  deleteGroep: (id: string) => Promise<{ ok: boolean; error?: string }>
+  login: (email: string, pin: string) => Promise<{ result: 'ok' | 'fout' | 'wacht' | 'geblokkeerd'; pogingenOver?: number; geblokkerdTot?: string }>
   logout: () => Promise<void>
-  register: (naam: string, email: string, pin: string, pelotoon: string) => Promise<{ ok: boolean; error?: string }>
+  register: (naam: string, email: string, pin: string, pelotoonId: string, groepId?: string) => Promise<{ ok: boolean; error?: string }>
   activeerUser: (userId: string) => Promise<void>
   deactiveerUser: (userId: string) => Promise<void>
   afwijsUser: (userId: string) => Promise<void>
-  addUserDirect: (data: Omit<User, 'id' | 'taken' | 'aangemeldOp' | 'laatstIngelogd'>) => Promise<{ ok: boolean; error?: string }>
-  updateUser: (data: Pick<User, 'id' | 'naam' | 'email' | 'pelotoon' | 'rol' | 'actief'>) => Promise<{ ok: boolean; error?: string }>
+  addUserDirect: (data: Omit<User, 'id' | 'taken' | 'aangemeldOp' | 'laatstIngelogd' | 'pelotoonNaam' | 'groepNaam'>) => Promise<{ ok: boolean; error?: string }>
+  updateUser: (data: Pick<User, 'id' | 'naam' | 'email' | 'pelotoonId' | 'groepId' | 'rol' | 'actief'>) => Promise<{ ok: boolean; error?: string }>
   deleteUser: (userId: string) => Promise<void>
   updateUserRole: (userId: string, rol: UserRole) => Promise<void>
   toggleTask: (taskId: string) => Promise<void>
@@ -59,6 +67,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [taken, setTaken] = useState<Taak[]>([])
   const [contacten, setContacten] = useState<Contact[]>([])
   const [bestanden, setBestanden] = useState<Bestand[]>([])
+  const [pelotonen, setPelotonen] = useState<Peloton[]>([])
+  const [groepen, setGroepen] = useState<Groep[]>([])
   const [appConfig, setAppConfig] = useState<AppConfig | null>(null)
   const [loading, setLoading] = useState(true)
 
@@ -68,17 +78,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [])
 
   const laadAlles = useCallback(async () => {
-    const [meRes, takenRes, contactenRes, bestandenRes, configRes] = await Promise.all([
+    const [meRes, takenRes, contactenRes, bestandenRes, configRes, pelotonenRes, groepenRes] = await Promise.all([
       api<User>('/api/auth/me'),
       api<Taak[]>('/api/taken'),
       api<Contact[]>('/api/contacten'),
       api<Bestand[]>('/api/bestanden'),
       api<AppConfig>('/api/config'),
+      api<Peloton[]>('/api/pelotonen'),
+      api<Groep[]>('/api/groepen'),
     ])
 
     if (meRes.data) {
       setCurrentUser(meRes.data)
-      if (meRes.data.rol === 'commandant' || meRes.data.rol === 'beheerder') {
+      if (['commandant', 'beheerder', 'groepscommandant'].includes(meRes.data.rol)) {
         await laadUsers()
       }
     }
@@ -89,6 +101,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setAppConfig(configRes.data)
       if (configRes.data.primairKleur) applyArmyTheme(configRes.data.primairKleur)
     }
+    if (pelotonenRes.data) setPelotonen(pelotonenRes.data)
+    if (groepenRes.data) setGroepen(groepenRes.data)
   }, [laadUsers])
 
   useEffect(() => {
@@ -97,30 +111,36 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   // --- Auth ---
 
-  const login = async (email: string, pin: string): Promise<'ok' | 'fout' | 'wacht'> => {
-    const { data, error } = await api<{ result: string; user: User }>('/api/auth/login', {
+  const login = async (email: string, pin: string): Promise<{ result: 'ok' | 'fout' | 'wacht' | 'geblokkeerd'; pogingenOver?: number; geblokkerdTot?: string }> => {
+    const { data, error } = await api<{ result: string; user: User; pogingenOver?: number; geblokkerdTot?: string }>('/api/auth/login', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email, pin }),
     })
-    if (error || !data) return 'fout'
-    if (data.result === 'wacht') return 'wacht'
+    if (error || !data) return { result: 'fout' }
+    if (data.result === 'wacht') return { result: 'wacht' }
+    if (data.result === 'geblokkeerd') return { result: 'geblokkeerd', geblokkerdTot: data.geblokkerdTot }
+    if (data.result === 'fout') return { result: 'fout', pogingenOver: data.pogingenOver }
     if (data.result === 'ok' && data.user) {
       setCurrentUser(data.user)
-      const [takenRes, contactenRes, bestandenRes] = await Promise.all([
+      const [takenRes, contactenRes, bestandenRes, pelotonenRes, groepenRes] = await Promise.all([
         api<Taak[]>('/api/taken'),
         api<Contact[]>('/api/contacten'),
         api<Bestand[]>('/api/bestanden'),
+        api<Peloton[]>('/api/pelotonen'),
+        api<Groep[]>('/api/groepen'),
       ])
       if (takenRes.data) setTaken(takenRes.data)
       if (contactenRes.data) setContacten(contactenRes.data)
       if (bestandenRes.data) setBestanden(bestandenRes.data)
-      if (data.user.rol === 'commandant' || data.user.rol === 'beheerder') {
+      if (pelotonenRes.data) setPelotonen(pelotonenRes.data)
+      if (groepenRes.data) setGroepen(groepenRes.data)
+      if (['commandant', 'beheerder', 'groepscommandant'].includes(data.user.rol)) {
         await laadUsers()
       }
-      return 'ok'
+      return { result: 'ok' }
     }
-    return 'fout'
+    return { result: 'fout' }
   }
 
   const logout = async () => {
@@ -129,11 +149,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setUsers([])
   }
 
-  const register = async (naam: string, email: string, pin: string, pelotoon: string): Promise<{ ok: boolean; error?: string }> => {
+  const register = async (naam: string, email: string, pin: string, pelotoonId: string, groepId?: string): Promise<{ ok: boolean; error?: string }> => {
     const { error } = await api('/api/auth/register', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ naam, email, pin, pelotoon }),
+      body: JSON.stringify({ naam, email, pin, pelotoonId, groepId }),
     })
     if (error) return { ok: false, error }
     return { ok: true }
@@ -156,7 +176,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     await laadUsers()
   }
 
-  const addUserDirect = async (data: Omit<User, 'id' | 'taken' | 'aangemeldOp' | 'laatstIngelogd'>): Promise<{ ok: boolean; error?: string }> => {
+  const addUserDirect = async (data: Omit<User, 'id' | 'taken' | 'aangemeldOp' | 'laatstIngelogd' | 'pelotoonNaam' | 'groepNaam'>): Promise<{ ok: boolean; error?: string }> => {
     const { error } = await api('/api/users', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -167,7 +187,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return { ok: true }
   }
 
-  const updateUser = async (data: Pick<User, 'id' | 'naam' | 'email' | 'pelotoon' | 'rol' | 'actief'>): Promise<{ ok: boolean; error?: string }> => {
+  const updateUser = async (data: Pick<User, 'id' | 'naam' | 'email' | 'pelotoonId' | 'groepId' | 'rol' | 'actief'>): Promise<{ ok: boolean; error?: string }> => {
     const { id, ...rest } = data
     const { error } = await api(`/api/users/${id}`, {
       method: 'PUT',
@@ -187,7 +207,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const updateUserRole = async (userId: string, rol: UserRole) => {
     const user = users.find(u => u.id === userId)
     if (!user) return
-    await updateUser({ id: userId, naam: user.naam, email: user.email, pelotoon: user.pelotoon, rol, actief: user.actief })
+    await updateUser({ id: userId, naam: user.naam, email: user.email, pelotoonId: user.pelotoonId, groepId: user.groepId, rol, actief: user.actief })
   }
 
   // --- Taken ---
@@ -252,7 +272,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       taken: [...prev.taken, { taskId: data.id, voltooid: false, nieuw: true }],
     } : prev)
     // Herlaad gebruikerslijst zodat alle gebruikers de nieuwe taak hebben
-    if (currentUser?.rol === 'commandant' || currentUser?.rol === 'beheerder') {
+    if (currentUser && ['commandant', 'beheerder', 'groepscommandant'].includes(currentUser.rol)) {
       await laadUsers()
     }
   }
@@ -276,7 +296,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       ...prev,
       taken: prev.taken.filter(t => t.taskId !== id),
     } : prev)
-    if (currentUser?.rol === 'commandant' || currentUser?.rol === 'beheerder') {
+    if (currentUser && ['commandant', 'beheerder', 'groepscommandant'].includes(currentUser.rol)) {
       await laadUsers()
     }
   }
@@ -305,6 +325,58 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const deleteContact = async (id: string) => {
     await api(`/api/contacten/${id}`, { method: 'DELETE' })
     setContacten(prev => prev.filter(c => c.id !== id))
+  }
+
+  // --- Pelotonen & Groepen ---
+
+  const addPeloton = async (naam: string): Promise<{ ok: boolean; error?: string }> => {
+    const { data, error } = await api<Peloton>('/api/pelotonen', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ naam }),
+    })
+    if (error) return { ok: false, error }
+    if (data) setPelotonen(prev => [...prev, data].sort((a, b) => a.naam.localeCompare(b.naam)))
+    return { ok: true }
+  }
+
+  const updatePeloton = async (id: string, naam: string): Promise<{ ok: boolean; error?: string }> => {
+    const { data, error } = await api<Peloton>(`/api/pelotonen/${id}`, {
+      method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ naam }),
+    })
+    if (error) return { ok: false, error }
+    if (data) setPelotonen(prev => prev.map(p => p.id === id ? data : p))
+    return { ok: true }
+  }
+
+  const deletePeloton = async (id: string): Promise<{ ok: boolean; error?: string }> => {
+    const { error } = await api(`/api/pelotonen/${id}`, { method: 'DELETE' })
+    if (error) return { ok: false, error }
+    setPelotonen(prev => prev.filter(p => p.id !== id))
+    return { ok: true }
+  }
+
+  const addGroep = async (naam: string, pelotoonId: string): Promise<{ ok: boolean; error?: string }> => {
+    const { data, error } = await api<Groep>('/api/groepen', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ naam, pelotoonId }),
+    })
+    if (error) return { ok: false, error }
+    if (data) setGroepen(prev => [...prev, data])
+    return { ok: true }
+  }
+
+  const updateGroep = async (id: string, naam: string): Promise<{ ok: boolean; error?: string }> => {
+    const { data, error } = await api<Groep>(`/api/groepen/${id}`, {
+      method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ naam }),
+    })
+    if (error) return { ok: false, error }
+    if (data) setGroepen(prev => prev.map(g => g.id === id ? data : g))
+    return { ok: true }
+  }
+
+  const deleteGroep = async (id: string): Promise<{ ok: boolean; error?: string }> => {
+    const { error } = await api(`/api/groepen/${id}`, { method: 'DELETE' })
+    if (error) return { ok: false, error }
+    setGroepen(prev => prev.filter(g => g.id !== id))
+    return { ok: true }
   }
 
   // --- App configuratie ---
@@ -358,7 +430,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   return (
     <AuthContext.Provider value={{
-      currentUser, users, taken, contacten, bestanden, appConfig, loading,
+      currentUser, users, taken, contacten, bestanden, pelotonen, groepen, appConfig, loading,
       login, logout, register,
       activeerUser, deactiveerUser, afwijsUser, addUserDirect, updateUser, deleteUser, updateUserRole,
       toggleTask, markeerTaakGezien, setOpmerking,
@@ -366,6 +438,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       addContact, updateContact, deleteContact,
       uploadBestand, deleteBestand,
       updateEmailConfig, updateThemaConfig,
+      addPeloton, updatePeloton, deletePeloton,
+      addGroep, updateGroep, deleteGroep,
     }}>
       {children}
     </AuthContext.Provider>

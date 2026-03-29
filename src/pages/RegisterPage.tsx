@@ -3,14 +3,19 @@ import { Link } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { PinInput } from '../components/PinInput'
 import { AlertCircle, CheckCircle2, ChevronLeft, Clock } from 'lucide-react'
-import { PELOTONEN } from '../data/dummyData'
+
+const INPUT = 'w-full px-4 py-2.5 rounded-lg border border-army-300 focus:outline-none focus:ring-2 focus:ring-army-500 focus:border-transparent text-sm bg-white'
 
 export function RegisterPage() {
-  const { register, appConfig } = useAuth()
+  const { register, appConfig, pelotonen, groepen } = useAuth()
   const logo = appConfig?.logoUrl || '/Embleem_13_Lichte_Brigade.png'
+  const naamPeloton = appConfig?.naamPeloton || 'Peloton'
+  const naamGroep = appConfig?.naamGroep || 'Groep'
+
   const [naam, setNaam] = useState('')
   const [email, setEmail] = useState('')
-  const [pelotoon, setPelotoon] = useState('')
+  const [pelotoonId, setPelotoonId] = useState('')
+  const [groepId, setGroepId] = useState('')
   const [pin, setPin] = useState('')
   const [pinBevestig, setPinBevestig] = useState('')
   const [error, setError] = useState('')
@@ -18,15 +23,21 @@ export function RegisterPage() {
   const [geregistreerd, setGeregistreerd] = useState(false)
 
   const pinMatch = pin.length === 4 && pinBevestig.length === 4 && pin === pinBevestig
+  const groepenVoorPeloton = groepen.filter(g => g.pelotoonId === pelotoonId)
+
+  const handlePelotoonChange = (id: string) => {
+    setPelotoonId(id)
+    setGroepId('') // reset groep bij ander peloton
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError('')
     if (pin.length < 4) { setError('Kies een 4-cijferige pincode.'); return }
     if (pin !== pinBevestig) { setError('Pincodes komen niet overeen.'); return }
-    if (!pelotoon) { setError('Selecteer je peloton.'); return }
+    if (!pelotoonId) { setError(`Selecteer je ${naamPeloton.toLowerCase()}.`); return }
     setLoading(true)
-    const result = await register(naam, email, pin, pelotoon)
+    const result = await register(naam, email, pin, pelotoonId, groepId || undefined)
     setLoading(false)
     if (result.ok) setGeregistreerd(true)
     else setError(result.error ?? 'Registratie mislukt.')
@@ -76,64 +87,42 @@ export function RegisterPage() {
 
           <form onSubmit={handleSubmit} className="space-y-5">
             <div>
-              <label className="block text-sm font-medium text-army-700 mb-1.5">
-                Volledige naam
-              </label>
-              <input
-                type="text"
-                required
-                value={naam}
-                onChange={e => setNaam(e.target.value)}
-                placeholder="Voornaam Achternaam"
-                className="w-full px-4 py-2.5 rounded-lg border border-army-300 focus:outline-none focus:ring-2 focus:ring-army-500 focus:border-transparent text-sm"
-              />
+              <label className="block text-sm font-medium text-army-700 mb-1.5">Volledige naam</label>
+              <input type="text" required value={naam} onChange={e => setNaam(e.target.value)} placeholder="Voornaam Achternaam" className={INPUT} />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-army-700 mb-1.5">
-                E-mailadres
-              </label>
-              <input
-                type="email"
-                required
-                autoComplete="email"
-                value={email}
-                onChange={e => setEmail(e.target.value)}
-                placeholder="naam@voorbeeld.nl"
-                className="w-full px-4 py-2.5 rounded-lg border border-army-300 focus:outline-none focus:ring-2 focus:ring-army-500 focus:border-transparent text-sm"
-              />
+              <label className="block text-sm font-medium text-army-700 mb-1.5">E-mailadres</label>
+              <input type="email" required autoComplete="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="naam@voorbeeld.nl" className={INPUT} />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-army-700 mb-1.5">
-                Peloton
-              </label>
-              <select
-                required
-                value={pelotoon}
-                onChange={e => setPelotoon(e.target.value)}
-                className="w-full px-4 py-2.5 rounded-lg border border-army-300 focus:outline-none focus:ring-2 focus:ring-army-500 focus:border-transparent text-sm bg-white"
-              >
-                <option value="">Selecteer peloton…</option>
-                {PELOTONEN.map(p => (
-                  <option key={p} value={p}>{p}</option>
-                ))}
+              <label className="block text-sm font-medium text-army-700 mb-1.5">{naamPeloton}</label>
+              <select required value={pelotoonId} onChange={e => handlePelotoonChange(e.target.value)} className={INPUT}>
+                <option value="">Selecteer {naamPeloton.toLowerCase()}…</option>
+                {pelotonen.map(p => <option key={p.id} value={p.id}>{p.naam}</option>)}
               </select>
             </div>
 
+            {pelotoonId && groepenVoorPeloton.length > 0 && (
+              <div>
+                <label className="block text-sm font-medium text-army-700 mb-1.5">{naamGroep} <span className="text-army-400 font-normal">(optioneel)</span></label>
+                <select value={groepId} onChange={e => setGroepId(e.target.value)} className={INPUT}>
+                  <option value="">Selecteer {naamGroep.toLowerCase()}…</option>
+                  {groepenVoorPeloton.map(g => <option key={g.id} value={g.id}>{g.naam}</option>)}
+                </select>
+              </div>
+            )}
+
             <div>
-              <label className="block text-sm font-medium text-army-700 mb-3 text-center">
-                Kies een pincode
-              </label>
+              <label className="block text-sm font-medium text-army-700 mb-3 text-center">Kies een pincode</label>
               <PinInput value={pin} onChange={setPin} disabled={loading} />
             </div>
 
             <div>
               <label className="block text-sm font-medium text-army-700 mb-3 text-center">
                 Bevestig pincode
-                {pinMatch && (
-                  <CheckCircle2 size={14} className="inline ml-1.5 text-green-600" />
-                )}
+                {pinMatch && <CheckCircle2 size={14} className="inline ml-1.5 text-green-600" />}
               </label>
               <PinInput value={pinBevestig} onChange={setPinBevestig} disabled={loading} />
             </div>

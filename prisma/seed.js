@@ -27,20 +27,44 @@ const TAKEN_DATA = [
   { id: 't6', titel: 'Telefoon aanvragen', beschrijving: 'Vraag je diensttelefoon aan bij je pelotonscommandant of bij de uitgifte van het magazijn. Dit is je primaire communicatiemiddel tijdens dienst.', categorie: 'Materieel', contactId: 'c1', volgorde: 5 },
 ]
 
+const PELOTONEN_DATA = [
+  { id: 'pel1', naam: '1e Peloton' },
+  { id: 'pel2', naam: '2e Peloton' },
+  { id: 'pel3', naam: '3e Peloton' },
+  { id: 'pel4', naam: 'Staf' },
+]
+
+const GROEPEN_DATA = [
+  { id: 'grp1', naam: '1e Groep', pelotoonId: 'pel1' },
+  { id: 'grp2', naam: '2e Groep', pelotoonId: 'pel1' },
+  { id: 'grp3', naam: '3e Groep', pelotoonId: 'pel1' },
+  { id: 'grp4', naam: '1e Groep', pelotoonId: 'pel2' },
+  { id: 'grp5', naam: '2e Groep', pelotoonId: 'pel2' },
+]
+
 const DEMO_USERS = [
   {
     id: 'u1', naam: 'Admin Beheer', email: 'admin@mindef.nl', pin: '0000',
-    rol: 'beheerder', pelotoon: 'Staf', aangemeldOp: '2024-01-01', actief: true,
+    rol: 'beheerder', pelotoonId: 'pel4', groepId: null,
+    aangemeldOp: '2024-01-01', actief: true,
     taakVoortgang: TAKEN_DATA.map(t => ({ taakId: t.id, voltooid: true, voltooiDatum: '2024-01-10' })),
   },
   {
     id: 'u2', naam: 'T. Smit', email: 't.smit@mindef.nl', pin: '1111',
-    rol: 'commandant', pelotoon: '1e Peloton', aangemeldOp: '2024-01-01', actief: true,
+    rol: 'commandant', pelotoonId: 'pel1', groepId: null,
+    aangemeldOp: '2024-01-01', actief: true,
     taakVoortgang: TAKEN_DATA.map(t => ({ taakId: t.id, voltooid: true, voltooiDatum: '2024-01-05' })),
   },
   {
+    id: 'u7', naam: 'P. de Boer', email: 'p.deboer@mindef.nl', pin: '6666',
+    rol: 'groepscommandant', pelotoonId: 'pel1', groepId: 'grp1',
+    aangemeldOp: '2024-01-15', actief: true,
+    taakVoortgang: TAKEN_DATA.map(t => ({ taakId: t.id, voltooid: true, voltooiDatum: '2024-01-20' })),
+  },
+  {
     id: 'u3', naam: 'Lars Hendriksen', email: 'l.hendriksen@reservist.nl', pin: '2222',
-    rol: 'reservist', pelotoon: '1e Peloton', aangemeldOp: '2024-03-01', actief: true,
+    rol: 'reservist', pelotoonId: 'pel1', groepId: 'grp1',
+    aangemeldOp: '2024-03-01', actief: true,
     taakVoortgang: [
       { taakId: 't1', voltooid: true, voltooiDatum: '2024-03-05' },
       { taakId: 't2', voltooid: true, voltooiDatum: '2024-03-07' },
@@ -52,7 +76,8 @@ const DEMO_USERS = [
   },
   {
     id: 'u4', naam: 'Sophie van Dam', email: 's.vandam@reservist.nl', pin: '3333',
-    rol: 'reservist', pelotoon: '1e Peloton', aangemeldOp: '2024-03-05', actief: true,
+    rol: 'reservist', pelotoonId: 'pel1', groepId: 'grp2',
+    aangemeldOp: '2024-03-05', actief: true,
     taakVoortgang: [
       { taakId: 't1', voltooid: true, voltooiDatum: '2024-03-08' },
       { taakId: 't2', voltooid: false },
@@ -64,12 +89,14 @@ const DEMO_USERS = [
   },
   {
     id: 'u5', naam: 'Kevin Meijer', email: 'k.meijer@reservist.nl', pin: '4444',
-    rol: 'reservist', pelotoon: '2e Peloton', aangemeldOp: '2024-03-10', actief: true,
+    rol: 'reservist', pelotoonId: 'pel2', groepId: 'grp4',
+    aangemeldOp: '2024-03-10', actief: true,
     taakVoortgang: TAKEN_DATA.map(t => ({ taakId: t.id, voltooid: false })),
   },
   {
     id: 'u6', naam: 'Nathalie Oost', email: 'n.oost@reservist.nl', pin: '5555',
-    rol: 'reservist', pelotoon: '2e Peloton', aangemeldOp: '2024-03-12', actief: true,
+    rol: 'reservist', pelotoonId: 'pel2', groepId: 'grp4',
+    aangemeldOp: '2024-03-12', actief: true,
     taakVoortgang: TAKEN_DATA.map(t => ({ taakId: t.id, voltooid: true, voltooiDatum: '2024-03-20' })),
   },
 ]
@@ -77,13 +104,23 @@ const DEMO_USERS = [
 async function main() {
   console.log('🌱 Seeding database...')
 
-  // Leeg de database
+  // Leeg de database (volgorde: FK-afhankelijkheden van klein naar groot)
   await prisma.pinResetToken.deleteMany()
   await prisma.userTask.deleteMany()
   await prisma.user.deleteMany()
+  await prisma.groep.deleteMany()
+  await prisma.peloton.deleteMany()
   await prisma.taak.deleteMany()
   await prisma.contact.deleteMany()
   await prisma.bestand.deleteMany()
+
+  // Pelotonen
+  await prisma.peloton.createMany({ data: PELOTONEN_DATA })
+  console.log(`✓ ${PELOTONEN_DATA.length} pelotonen`)
+
+  // Groepen
+  await prisma.groep.createMany({ data: GROEPEN_DATA })
+  console.log(`✓ ${GROEPEN_DATA.length} groepen`)
 
   // Contacten
   await prisma.contact.createMany({ data: CONTACTEN_DATA })
@@ -103,7 +140,8 @@ async function main() {
         email: u.email,
         pin: hashedPin,
         rol: u.rol,
-        pelotoon: u.pelotoon,
+        pelotoonId: u.pelotoonId,
+        groepId: u.groepId,
         aangemeldOp: u.aangemeldOp,
         actief: u.actief,
         taken: {

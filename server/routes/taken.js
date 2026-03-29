@@ -1,6 +1,8 @@
 import { Router } from 'express'
 import { prisma } from '../prisma.js'
 import { requireAuth, requireRol } from '../middleware/auth.js'
+import { logAuditEvent, actor } from '../audit.js'
+import { validate } from '../validate.js'
 
 const router = Router()
 
@@ -10,8 +12,14 @@ router.get('/', requireAuth, async (req, res) => {
   res.json(taken)
 })
 
+const taakSchema = {
+  titel:       { required: true, maxLength: 200 },
+  beschrijving:{ required: true, maxLength: 2000 },
+  categorie:   { required: true, maxLength: 100 },
+}
+
 // POST /api/taken
-router.post('/', requireAuth, requireRol('commandant', 'beheerder'), async (req, res) => {
+router.post('/', requireAuth, requireRol('commandant', 'beheerder'), validate(taakSchema), async (req, res) => {
   const { titel, beschrijving, categorie, contactId, vereistTaakId } = req.body
   if (!titel || !beschrijving || !categorie) {
     return res.status(400).json({ error: 'titel, beschrijving en categorie zijn verplicht' })
@@ -38,11 +46,12 @@ router.post('/', requireAuth, requireRol('commandant', 'beheerder'), async (req,
     skipDuplicates: true,
   })
 
+  logAuditEvent({ ...actor(req), actie: 'TAAK_AANGEMAAKT', entiteit: 'Taak', entiteitId: taak.id, details: { titel, categorie } })
   res.json(taak)
 })
 
 // PUT /api/taken/:id
-router.put('/:id', requireAuth, requireRol('commandant', 'beheerder'), async (req, res) => {
+router.put('/:id', requireAuth, requireRol('commandant', 'beheerder'), validate(taakSchema), async (req, res) => {
   const { titel, beschrijving, categorie, contactId, vereistTaakId } = req.body
   if (!titel || !beschrijving || !categorie) {
     return res.status(400).json({ error: 'titel, beschrijving en categorie zijn verplicht' })
@@ -51,17 +60,20 @@ router.put('/:id', requireAuth, requireRol('commandant', 'beheerder'), async (re
     where: { id: req.params.id },
     data: { titel, beschrijving, categorie, contactId: contactId || '', vereistTaakId: vereistTaakId || null },
   })
+  logAuditEvent({ ...actor(req), actie: 'TAAK_BIJGEWERKT', entiteit: 'Taak', entiteitId: taak.id, details: { titel, categorie } })
   res.json(taak)
 })
 
 // DELETE /api/taken/:id
 router.delete('/:id', requireAuth, requireRol('commandant', 'beheerder'), async (req, res) => {
   // Verwijder vereistTaakId-referenties naar deze taak
+  const teVerwijderen = await prisma.taak.findUnique({ where: { id: req.params.id } })
   await prisma.taak.updateMany({
     where: { vereistTaakId: req.params.id },
     data: { vereistTaakId: null },
   })
   await prisma.taak.delete({ where: { id: req.params.id } })
+  logAuditEvent({ ...actor(req), actie: 'TAAK_VERWIJDERD', entiteit: 'Taak', entiteitId: req.params.id, details: { titel: teVerwijderen?.titel } })
   res.json({ ok: true })
 })
 
@@ -106,6 +118,7 @@ router.patch('/:id/toggle', requireAuth, async (req, res) => {
       voltooiDatum: nieuweWaarde ? new Date().toISOString().split('T')[0] : null,
     },
   })
+  logAuditEvent({ ...actor(req), actie: nieuweWaarde ? 'TAAK_VOLTOOID' : 'TAAK_HEROPEND', entiteit: 'UserTask', entiteitId: updated.id, details: { taakId: req.params.id } })
   res.json({
     taskId: updated.taakId,
     voltooid: updated.voltooid,

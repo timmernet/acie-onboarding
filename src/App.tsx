@@ -1,4 +1,5 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
+import { useEffect } from 'react'
 import { AuthProvider, useAuth } from './context/AuthContext'
 import { ProtectedRoute } from './components/ProtectedRoute'
 import { Layout } from './components/Layout'
@@ -21,11 +22,26 @@ function RootRedirect() {
   )
   if (!currentUser) return <Navigate to="/login" replace />
   if (currentUser.rol === 'beheerder') return <Navigate to="/beheerder" replace />
-  if (currentUser.rol === 'commandant') return <Navigate to="/commandant" replace />
+  if (currentUser.rol === 'commandant' || currentUser.rol === 'groepscommandant') return <Navigate to="/commandant" replace />
   return <Navigate to="/dashboard" replace />
 }
 
 function AppRoutes() {
+  const { appConfig } = useAuth()
+
+  useEffect(() => {
+    if (appConfig?.browserTitel) document.title = appConfig.browserTitel
+    if (appConfig?.faviconUrl) {
+      let link = document.querySelector("link[rel~='icon']") as HTMLLinkElement | null
+      if (!link) {
+        link = document.createElement('link')
+        link.rel = 'icon'
+        document.head.appendChild(link)
+      }
+      link.href = appConfig.faviconUrl
+    }
+  }, [appConfig?.browserTitel, appConfig?.faviconUrl])
+
   return (
     <Routes>
       {/* Public */}
@@ -53,7 +69,7 @@ function AppRoutes() {
       <Route
         path="/commandant"
         element={
-          <ProtectedRoute roles={['commandant', 'beheerder']}>
+          <ProtectedRoute roles={['commandant', 'beheerder', 'groepscommandant']}>
             <Layout>
               <CommanderDashboard />
             </Layout>

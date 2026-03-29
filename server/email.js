@@ -8,6 +8,7 @@ async function getMailConfig() {
   } catch { /* DB not yet ready */ }
 
   return {
+    emailType: cfg?.emailType || 'smtp',
     host: cfg?.emailHost || process.env.EMAIL_HOST || '',
     port: cfg?.emailPort || Number(process.env.EMAIL_PORT) || 587,
     secure: cfg?.emailHost ? cfg.emailSecure : process.env.EMAIL_SECURE === 'true',
@@ -15,10 +16,68 @@ async function getMailConfig() {
     pass: cfg?.emailPass || process.env.EMAIL_PASS || '',
     from: cfg?.emailFrom || process.env.EMAIL_FROM || '',
     admin: cfg?.emailAdmin || process.env.EMAIL_ADMIN || '',
+    tenantId: cfg?.emailTenantId || '',
+    clientId: cfg?.emailClientId || '',
+    clientSecret: cfg?.emailClientSecret || '',
     appNaam: cfg?.appNaam || 'Reservisten Onboarding',
     eenheidNaam: cfg?.eenheidNaam || 'A-Compagnie · 30e Infanteriebataljon',
     eenheidSubtitel: cfg?.eenheidSubtitel || '13 Lichte Brigade — Reservisten Onboarding',
   }
+}
+
+async function getGraphToken(tenantId, clientId, clientSecret) {
+  const params = new URLSearchParams({
+    grant_type: 'client_credentials',
+    client_id: clientId,
+    client_secret: clientSecret,
+    scope: 'https://graph.microsoft.com/.default',
+  })
+  const res = await fetch(
+    `https://login.microsoftonline.com/${tenantId}/oauth2/v2.0/token`,
+    { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: params }
+  )
+  const data = await res.json()
+  if (!res.ok) throw new Error(data.error_description || 'Graph API token ophalen mislukt')
+  return data.access_token
+}
+
+async function sendViaGraph({ tenantId, clientId, clientSecret, user, from, to, subject, html }) {
+  const accessToken = await getGraphToken(tenantId, clientId, clientSecret)
+  const sender = from || user
+  const res = await fetch(
+    `https://graph.microsoft.com/v1.0/users/${encodeURIComponent(sender)}/sendMail`,
+    {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        message: {
+          subject,
+          body: { contentType: 'HTML', content: html },
+          toRecipients: [{ emailAddress: { address: to } }],
+          from: { emailAddress: { address: sender } },
+        },
+        saveToSentItems: false,
+      }),
+    }
+  )
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}))
+    throw new Error(err?.error?.message || `Graph sendMail mislukt (HTTP ${res.status})`)
+  }
+}
+
+export async function createTransporter(cfg) {
+  const transportConfig = {
+    host: cfg.host,
+    port: cfg.port,
+    secure: cfg.secure,
+    tls: { rejectUnauthorized: false },
+  }
+  if (cfg.user && cfg.pass) transportConfig.auth = { user: cfg.user, pass: cfg.pass }
+  return nodemailer.createTransport(transportConfig)
 }
 
 function emailTemplate(titel, inhoud, appNaam, eenheidNaam, eenheidSubtitel) {
@@ -98,10 +157,35 @@ function buildTemplates(appNaam, eenheidNaam, eenheidSubtitel) {
   }
 }
 
+export async function verstuurTestEmail(cfg, naar) {
+  const isExchange = cfg.emailType === 'exchange' && cfg.tenantId && cfg.clientId && cfg.clientSecret
+  if (isExchange) {
+    await sendViaGraph({
+      tenantId: cfg.tenantId,
+      clientId: cfg.clientId,
+      clientSecret: cfg.clientSecret,
+      user: cfg.user,
+      from: cfg.from || cfg.user,
+      to: naar,
+      subject: 'Test e-mail — Onboarding Portaal',
+      html: '<p>De e-mailconfiguratie werkt correct.</p>',
+    })
+  } else {
+    const transporter = await createTransporter(cfg)
+    await transporter.sendMail({
+      from: cfg.from || cfg.user,
+      to: naar,
+      subject: 'Test e-mail — Onboarding Portaal',
+      text: 'De e-mailconfiguratie werkt correct.',
+    })
+  }
+}
+
 export async function verstuurEmail(type, naar, data = {}) {
   const cfg = await getMailConfig()
+  const isExchange = cfg.emailType === 'exchange' && cfg.tenantId && cfg.clientId && cfg.clientSecret
 
-  if (!cfg.host) {
+  if (!isExchange && !cfg.host) {
     console.log(`[Email gesimuleerd] type=${type} naar=${naar}`)
     return
   }
@@ -111,22 +195,27 @@ export async function verstuurEmail(type, naar, data = {}) {
   if (!template) return
   const { onderwerp, html } = template({ ...data, naar })
 
-  const transportConfig = {
-    host: cfg.host,
-    port: cfg.port,
-    secure: cfg.secure,
-    tls: { rejectUnauthorized: false },
-  }
-  if (cfg.user && cfg.pass) transportConfig.auth = { user: cfg.user, pass: cfg.pass }
-
   try {
-    const transporter = nodemailer.createTransport(transportConfig)
-    await transporter.sendMail({
-      from: cfg.from || cfg.user,
-      to: naar,
-      subject: onderwerp,
-      html,
-    })
+    if (isExchange) {
+      await sendViaGraph({
+        tenantId: cfg.tenantId,
+        clientId: cfg.clientId,
+        clientSecret: cfg.clientSecret,
+        user: cfg.user,
+        from: cfg.from || cfg.user,
+        to: naar,
+        subject: onderwerp,
+        html,
+      })
+    } else {
+      const transporter = await createTransporter(cfg)
+      await transporter.sendMail({
+        from: cfg.from || cfg.user,
+        to: naar,
+        subject: onderwerp,
+        html,
+      })
+    }
   } catch (err) {
     console.error(`Email versturen mislukt (${type}):`, err.message)
   }
