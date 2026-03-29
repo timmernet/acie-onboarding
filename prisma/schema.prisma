@@ -37,6 +37,7 @@ model User {
   laatstIngelogd String?
   loginPogingen  Int        @default(0)
   geblokkerdTot  String?
+  profielFoto    String     @default("")
   taken          UserTask[]
   peloton        Peloton    @relation(fields: [pelotoonId], references: [id])
   groep          Groep?     @relation(fields: [groepId], references: [id])

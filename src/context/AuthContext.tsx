@@ -43,6 +43,10 @@ interface AuthContextType {
   deleteContact: (id: string) => Promise<void>
   uploadBestand: (file: File, naam: string, beschrijving: string, categorie: string) => Promise<void>
   deleteBestand: (id: string) => Promise<void>
+  updateProfiel: (naam: string, email: string, pin: string) => Promise<{ ok: boolean; error?: string }>
+  updateProfielPin: (huidigPin: string, nieuwPin: string) => Promise<{ ok: boolean; error?: string }>
+  uploadProfielFoto: (file: File) => Promise<{ ok: boolean; error?: string }>
+  verwijderEigenAccount: (pin: string) => Promise<{ ok: boolean; error?: string }>
 }
 
 const AuthContext = createContext<AuthContextType | null>(null)
@@ -428,6 +432,55 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setBestanden(prev => prev.filter(b => b.id !== id))
   }
 
+  // --- Profiel ---
+
+  const updateProfiel = async (naam: string, email: string, pin: string): Promise<{ ok: boolean; error?: string }> => {
+    const { data, error } = await api<User>('/api/profiel/gegevens', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ naam, email, pin }),
+    })
+    if (error) return { ok: false, error }
+    if (data) setCurrentUser(data)
+    return { ok: true }
+  }
+
+  const updateProfielPin = async (huidigPin: string, nieuwPin: string): Promise<{ ok: boolean; error?: string }> => {
+    const { error } = await api('/api/profiel/pin', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ huidigPin, nieuwPin }),
+    })
+    if (error) return { ok: false, error }
+    return { ok: true }
+  }
+
+  const uploadProfielFoto = async (file: File): Promise<{ ok: boolean; error?: string }> => {
+    const formData = new FormData()
+    formData.append('file', file)
+    try {
+      const res = await fetch('/api/profiel/foto', { method: 'POST', body: formData, credentials: 'include' })
+      const data = await res.json()
+      if (!res.ok) return { ok: false, error: data.error ?? 'Upload mislukt' }
+      setCurrentUser(prev => prev ? { ...prev, profielFoto: data.url } : prev)
+      return { ok: true }
+    } catch {
+      return { ok: false, error: 'Upload mislukt' }
+    }
+  }
+
+  const verwijderEigenAccount = async (pin: string): Promise<{ ok: boolean; error?: string }> => {
+    const { error } = await api('/api/profiel', {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ pin }),
+    })
+    if (error) return { ok: false, error }
+    setCurrentUser(null)
+    setUsers([])
+    return { ok: true }
+  }
+
   return (
     <AuthContext.Provider value={{
       currentUser, users, taken, contacten, bestanden, pelotonen, groepen, appConfig, loading,
@@ -440,6 +493,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       updateEmailConfig, updateThemaConfig,
       addPeloton, updatePeloton, deletePeloton,
       addGroep, updateGroep, deleteGroep,
+      updateProfiel, updateProfielPin, uploadProfielFoto, verwijderEigenAccount,
     }}>
       {children}
     </AuthContext.Provider>

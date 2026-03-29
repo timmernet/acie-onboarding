@@ -12,6 +12,7 @@ import { CommanderDashboard } from './pages/CommanderDashboard'
 import { AdminDashboard } from './pages/AdminDashboard'
 import { ContactsPage } from './pages/ContactsPage'
 import { DocumentenPage } from './pages/DocumentenPage'
+import { ProfielPage } from './pages/ProfielPage'
 
 function RootRedirect() {
   const { currentUser, loading } = useAuth()
@@ -108,6 +109,18 @@ function AppRoutes() {
           <ProtectedRoute>
             <Layout>
               <ContactsPage />
+            </Layout>
+          </ProtectedRoute>
+        }
+      />
+
+      {/* Profiel — alle ingelogde gebruikers */}
+      <Route
+        path="/profiel"
+        element={
+          <ProtectedRoute>
+            <Layout>
+              <ProfielPage />
             </Layout>
           </ProtectedRoute>
         }

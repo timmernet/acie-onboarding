@@ -18,14 +18,21 @@ import configRouter from './routes/config.js'
 import pelotonenRouter from './routes/pelotonen.js'
 import groepenRouter from './routes/groepen.js'
 import auditRouter from './routes/audit.js'
+import profielRouter from './routes/profiel.js'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const app = express()
 const PORT = process.env.PORT || 3001
+const IS_PROD = process.env.NODE_ENV === 'production'
 
-// Zorg dat uploads-map bestaat
+// Vertrouw de eerste reverse proxy (nginx) voor correcte IP-detectie en rate limiting
+if (IS_PROD) app.set('trust proxy', 1)
+
+// Zorg dat uploads- en logs-map bestaan
 const UPLOADS_DIR = join(__dirname, 'uploads')
 if (!existsSync(UPLOADS_DIR)) mkdirSync(UPLOADS_DIR, { recursive: true })
+const LOGS_DIR = join(__dirname, '..', 'logs')
+if (!existsSync(LOGS_DIR)) mkdirSync(LOGS_DIR, { recursive: true })
 
 // Security headers
 app.use(helmet({
@@ -83,7 +90,7 @@ app.use(cookieParser())
 // Thema-assets (logo, favicon) worden inline weergegeven
 // Overige uploads krijgen Content-Disposition: attachment (voorkomt inline-uitvoering)
 app.use('/uploads', (req, res, next) => {
-  if (!req.path.startsWith('/thema_')) {
+  if (!req.path.startsWith('/thema_') && !req.path.startsWith('/profiel_')) {
     res.setHeader('Content-Disposition', `attachment; filename="${req.path.split('/').pop()}"`)
   }
   next()
@@ -98,6 +105,24 @@ app.use('/api/config', configRouter)
 app.use('/api/pelotonen', pelotonenRouter)
 app.use('/api/groepen', groepenRouter)
 app.use('/api/audit', auditRouter)
+app.use('/api/profiel', profielRouter)
+
+// Health check — voor monitoring en load balancers
+app.get('/api/health', async (_req, res) => {
+  try {
+    await prisma.$queryRaw`SELECT 1`
+    res.json({ status: 'ok', ts: new Date().toISOString() })
+  } catch {
+    res.status(503).json({ status: 'error', ts: new Date().toISOString() })
+  }
+})
+
+// Globale fout-handler — vangt onverwachte fouten op zonder stack trace te lekken
+// eslint-disable-next-line no-unused-vars
+app.use((err, _req, res, _next) => {
+  console.error('[Server] Onverwachte fout:', err)
+  res.status(500).json({ error: 'Er is een interne serverfout opgetreden' })
+})
 
 // In productie: serveer de Vite build
 if (process.env.NODE_ENV === 'production') {
@@ -128,3 +153,11 @@ async function gracefulShutdown(signaal) {
 
 process.on('SIGTERM', () => gracefulShutdown('SIGTERM'))
 process.on('SIGINT',  () => gracefulShutdown('SIGINT'))
+
+process.on('unhandledRejection', (reason) => {
+  console.error('[unhandledRejection]', reason)
+})
+process.on('uncaughtException', (err) => {
+  console.error('[uncaughtException]', err)
+  gracefulShutdown('uncaughtException')
+})

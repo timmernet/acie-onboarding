@@ -21,6 +21,7 @@ export interface User {
   taken: UserTask[]
   actief: boolean
   laatstIngelogd?: string
+  profielFoto?: string
 }
 
 export interface Peloton {

@@ -1,6 +1,6 @@
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
-import { LogOut, ClipboardList, Users, Settings, BookOpen, FolderOpen } from 'lucide-react'
+import { LogOut, ClipboardList, Users, Settings, BookOpen, FolderOpen, UserCircle } from 'lucide-react'
 
 interface Props {
   children: React.ReactNode
@@ -41,7 +41,7 @@ export function Layout({ children }: Props) {
       { to: '/documenten', icon: FolderOpen, label: 'Documenten', badge: 0 },
       { to: '/contacten', icon: BookOpen, label: 'Contacten', badge: 0 },
     ]
-    if (currentUser.rol === 'commandant') return [
+    if (currentUser.rol === 'commandant' || currentUser.rol === 'groepscommandant') return [
       { to: '/commandant', icon: Users, label: 'Voortgang', badge: wachtendCount },
       { to: '/documenten', icon: FolderOpen, label: 'Documenten', badge: 0 },
       { to: '/contacten', icon: BookOpen, label: 'Contacten', badge: 0 },
@@ -77,18 +77,28 @@ export function Layout({ children }: Props) {
             </div>
           </div>
 
-          {/* User info + logout */}
+          {/* User info + profiel + logout */}
           {currentUser && (
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2">
               <div className="hidden sm:flex flex-col items-end">
                 <span className="text-sm font-medium">{currentUser.naam}</span>
                 <span className="text-army-300 text-xs">
                   {rolLabel[currentUser.rol]} · {currentUser.pelotoonNaam}
                 </span>
               </div>
-              <div className="w-8 h-8 rounded-full bg-army-600 flex items-center justify-center text-xs font-bold">
-                {initials}
-              </div>
+              <Link
+                to="/profiel"
+                className="w-9 h-9 rounded-full overflow-hidden flex items-center justify-center hover:ring-2 hover:ring-gold-400 transition-all flex-shrink-0"
+                title="Mijn profiel"
+              >
+                {currentUser.profielFoto ? (
+                  <img src={currentUser.profielFoto} alt="Profiel" className="w-full h-full object-cover" />
+                ) : (
+                  <div className="w-full h-full bg-army-600 flex items-center justify-center text-xs font-bold">
+                    {initials}
+                  </div>
+                )}
+              </Link>
               <button
                 onClick={handleLogout}
                 className="p-2 rounded-lg hover:bg-army-700 transition-colors"

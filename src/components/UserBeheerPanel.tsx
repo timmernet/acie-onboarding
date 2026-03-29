@@ -114,6 +114,7 @@ export function UserBeheerPanel() {
   const [bewerkError, setBewerkError] = useState('')
   const [resetBevestig, setResetBevestig] = useState<string | null>(null)
   const [resetVerstuurd, setResetVerstuurd] = useState<string | null>(null)
+  const [resetMelding, setResetMelding] = useState<{ naam: string } | null>(null)
   const [verwijderId, setVerwijderId] = useState<string | null>(null)
 
   const aanvragerRol = currentUser?.rol
@@ -175,7 +176,9 @@ export function UserBeheerPanel() {
       })
     } catch { /* stil falen */ }
     setResetVerstuurd(u.id)
+    setResetMelding({ naam: u.naam })
     setTimeout(() => setResetVerstuurd(null), 3000)
+    setTimeout(() => setResetMelding(null), 6000)
   }
 
   const slaNieuwOp = async () => {
@@ -212,6 +215,16 @@ export function UserBeheerPanel() {
 
   return (
     <div className="space-y-4">
+      {/* PIN-reset bevestiging */}
+      {resetMelding && (
+        <div className="flex items-center gap-3 bg-green-50 border border-green-200 rounded-xl px-4 py-3">
+          <KeyRound size={16} className="text-green-600 flex-shrink-0" />
+          <span className="text-green-800 text-sm">
+            PIN-reset e-mail verstuurd naar <strong>{resetMelding.naam}</strong>. De gebruiker ontvangt een link om een nieuwe pincode in te stellen.
+          </span>
+        </div>
+      )}
+
       {/* Wachtende activaties */}
       {wachtend.length > 0 && (
         <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 space-y-3">

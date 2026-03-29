@@ -88,6 +88,7 @@ router.post('/login', validate({
   res.cookie(COOKIE_NAME, token, {
     httpOnly: true,
     sameSite: 'lax',
+    secure: process.env.NODE_ENV === 'production',
     maxAge: COOKIE_MAX_AGE,
   })
 

@@ -1,5 +1,6 @@
 import { useEffect, useState, useCallback } from 'react'
 import { Shield, Search, ChevronLeft, ChevronRight, RefreshCw } from 'lucide-react'
+import { useAuth } from '../context/AuthContext'
 
 interface AuditEntry {
   id: string
@@ -65,6 +66,17 @@ function formatDetails(details: Record<string, unknown>) {
 }
 
 export default function AuditLogPanel() {
+  const { appConfig } = useAuth()
+
+  const rolLabels: Record<string, string> = {
+    reservist:        appConfig?.naamReservist        || 'Reservist',
+    groepscommandant: appConfig?.naamGroepscommandant || 'Groepscommandant',
+    commandant:       appConfig?.naamCommandant       || 'Pelotonscommandant',
+    beheerder:        'Beheerder',
+    anoniem:          'Anoniem',
+    onbekend:         'Onbekend',
+  }
+
   const [data, setData] = useState<AuditResponse | null>(null)
   const [pagina, setPagina] = useState(1)
   const [zoekActie, setZoekActie] = useState('')
@@ -167,7 +179,7 @@ export default function AuditLogPanel() {
                     </td>
                     <td className="px-4 py-3 whitespace-nowrap">
                       <span className="font-medium text-gray-800">{log.userNaam}</span>
-                      <span className="ml-1 text-xs text-gray-400">({log.userRol})</span>
+                      <span className="ml-1 text-xs text-gray-400">({rolLabels[log.userRol] ?? log.userRol})</span>
                     </td>
                     <td className="px-4 py-3 whitespace-nowrap text-gray-600 text-xs">
                       {log.entiteit ? `${log.entiteit}` : '—'}
